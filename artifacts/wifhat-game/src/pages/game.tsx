@@ -1,9 +1,9 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import { useLocation } from "wouter";
 import { useGetMe, getGetMeQueryKey, useSubmitScore } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import wifhatImg from "@assets/Wifhat_1781355793327.png";
-import { Loader2 } from "lucide-react";
+import { playFlap, playCoin, playGameOver, playScore } from "@/lib/sounds";
 
 // Game Constants
 const GRAVITY = 0.5;
@@ -17,7 +17,7 @@ const CANVAS_HEIGHT = 600;
 
 export default function Game() {
   const [, setLocation] = useLocation();
-  const { data: user, isLoading: userLoading } = useGetMe({ query: { enabled: true, queryKey: getGetMeQueryKey() } });
+  const { data: user } = useGetMe({ query: { enabled: true, queryKey: getGetMeQueryKey() } });
   const submitScore = useSubmitScore();
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -37,21 +37,21 @@ export default function Game() {
   const speedRef = useRef(PIPE_SPEED);
   const gapRef = useRef(PIPE_GAP);
   const imgRef = useRef<HTMLImageElement | null>(null);
+  const gameStateRef = useRef<"countdown" | "playing" | "gameover">("countdown");
 
+  // Keep gameStateRef in sync
   useEffect(() => {
-    if (!userLoading && !user) {
-      setLocation("/");
-    }
-  }, [user, userLoading, setLocation]);
+    gameStateRef.current = gameState;
+  }, [gameState]);
 
+  // Load hat image
   useEffect(() => {
     const img = new Image();
     img.src = wifhatImg;
-    img.onload = () => {
-      imgRef.current = img;
-    };
+    img.onload = () => { imgRef.current = img; };
   }, []);
 
+  // Countdown
   useEffect(() => {
     if (gameState === "countdown") {
       let count = 3;
@@ -69,9 +69,216 @@ export default function Game() {
       }, 1000);
       return () => clearInterval(timer);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gameState]);
 
-  const startGame = () => {
+  const addPipe = () => {
+    const minGapTop = 60;
+    const maxGapTop = CANVAS_HEIGHT - gapRef.current - 100;
+    const gapTop = Math.random() * (maxGapTop - minGapTop) + minGapTop;
+    const hasCoin = Math.random() > 0.4;
+    pipes.current.push({ x: CANVAS_WIDTH, gapTop, passed: false, hasCoin, coinCollected: false });
+  };
+
+  const flap = useCallback(() => {
+    if (gameStateRef.current === "playing") {
+      hatVelocity.current = FLAP_STRENGTH;
+      playFlap();
+    }
+  }, []);
+
+  const gameOver = useCallback(() => {
+    setGameState("gameover");
+    if (frameId.current) cancelAnimationFrame(frameId.current);
+    playGameOver();
+
+    if (user) {
+      submitScore.mutate({ data: { score: scoreRef.current } }, {
+        onSuccess: (data) => {
+          setFinalResult({ isHighScore: data.isHighScore, rank: data.rank });
+        }
+      });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]);
+
+  const gameLoop = useCallback(() => {
+    if (!canvasRef.current) return;
+    const ctx = canvasRef.current.getContext("2d");
+    if (!ctx) return;
+
+    // Sky gradient
+    const grad = ctx.createLinearGradient(0, 0, 0, CANVAS_HEIGHT - 50);
+    grad.addColorStop(0, "#5bc8f5");
+    grad.addColorStop(1, "#87CEEB");
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
+
+    // Physics
+    hatVelocity.current += GRAVITY;
+    hatY.current += hatVelocity.current;
+
+    // Draw pipes
+    pipes.current.forEach(pipe => {
+      pipe.x -= speedRef.current;
+
+      const bottomPipeY = pipe.gapTop + gapRef.current;
+      const bottomPipeHeight = CANVAS_HEIGHT - 50 - bottomPipeY;
+
+      // Pipe body
+      ctx.fillStyle = "#3dba4e";
+      ctx.fillRect(pipe.x, 0, PIPE_WIDTH, pipe.gapTop);
+      ctx.fillRect(pipe.x, bottomPipeY, PIPE_WIDTH, bottomPipeHeight);
+
+      // Pipe cap (top)
+      ctx.fillStyle = "#2a9e3d";
+      ctx.fillRect(pipe.x - 5, pipe.gapTop - 18, PIPE_WIDTH + 10, 18);
+      // Pipe cap (bottom)
+      ctx.fillRect(pipe.x - 5, bottomPipeY, PIPE_WIDTH + 10, 18);
+
+      // Pipe highlights
+      ctx.fillStyle = "#5de06e";
+      ctx.fillRect(pipe.x + 4, 0, 8, pipe.gapTop - 18);
+      ctx.fillRect(pipe.x + 4, bottomPipeY + 18, 8, bottomPipeHeight - 18);
+
+      // Coin
+      if (pipe.hasCoin && !pipe.coinCollected) {
+        const coinX = pipe.x + PIPE_WIDTH / 2;
+        const coinY = pipe.gapTop + gapRef.current / 2;
+
+        // Glow
+        const glowGrad = ctx.createRadialGradient(coinX, coinY, 2, coinX, coinY, 20);
+        glowGrad.addColorStop(0, "rgba(255,215,0,0.6)");
+        glowGrad.addColorStop(1, "rgba(255,215,0,0)");
+        ctx.fillStyle = glowGrad;
+        ctx.beginPath();
+        ctx.arc(coinX, coinY, 20, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Coin body
+        ctx.beginPath();
+        ctx.arc(coinX, coinY, 14, 0, Math.PI * 2);
+        ctx.fillStyle = "#ffd700";
+        ctx.fill();
+        ctx.strokeStyle = "#b8860b";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // "B" label
+        ctx.fillStyle = "#7a5500";
+        ctx.font = "bold 12px 'Press Start 2P'";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText("B", coinX, coinY + 1);
+
+        // Coin collision
+        if (
+          Math.abs(coinX - (50 + HAT_SIZE / 2)) < HAT_SIZE / 2 + 14 &&
+          Math.abs(coinY - (hatY.current + HAT_SIZE / 2)) < HAT_SIZE / 2 + 14
+        ) {
+          pipe.coinCollected = true;
+          scoreRef.current += 50;
+          setScore(scoreRef.current);
+          bthRef.current = Math.floor(scoreRef.current / 300);
+          setBthEarned(bthRef.current);
+          playCoin();
+        }
+      }
+
+      // Pass pipe → score
+      if (pipe.x + PIPE_WIDTH < 50 && !pipe.passed) {
+        pipe.passed = true;
+        scoreRef.current += 10;
+        setScore(scoreRef.current);
+        bthRef.current = Math.floor(scoreRef.current / 300);
+        setBthEarned(bthRef.current);
+        playScore();
+
+        // Progressive difficulty every 100 pts
+        if (scoreRef.current % 100 === 0) {
+          speedRef.current = Math.min(speedRef.current + 0.5, 7);
+          gapRef.current = Math.max(gapRef.current - 5, 90);
+        }
+      }
+
+      // Collision detection (shrunk hitbox for fairness)
+      const hatRect = { x: 50 + 8, y: hatY.current + 6, w: HAT_SIZE - 16, h: HAT_SIZE - 10 };
+      const topPipeRect = { x: pipe.x, y: 0, w: PIPE_WIDTH, h: pipe.gapTop };
+      const bottomPipeRect = { x: pipe.x, y: bottomPipeY, w: PIPE_WIDTH, h: bottomPipeHeight };
+
+      const hitTop =
+        hatRect.x < topPipeRect.x + topPipeRect.w &&
+        hatRect.x + hatRect.w > topPipeRect.x &&
+        hatRect.y < topPipeRect.y + topPipeRect.h;
+      const hitBottom =
+        hatRect.x < bottomPipeRect.x + bottomPipeRect.w &&
+        hatRect.x + hatRect.w > bottomPipeRect.x &&
+        hatRect.y + hatRect.h > bottomPipeRect.y;
+
+      if (hitTop || hitBottom) {
+        gameOver();
+        return;
+      }
+    });
+
+    // Remove off-screen pipes
+    if (pipes.current.length > 0 && pipes.current[0].x < -PIPE_WIDTH) {
+      pipes.current.shift();
+    }
+    if (pipes.current.length === 0 || pipes.current[pipes.current.length - 1].x < CANVAS_WIDTH - 200) {
+      addPipe();
+    }
+
+    // Floor/ceiling collision
+    const floorY = CANVAS_HEIGHT - 50;
+    if (hatY.current + HAT_SIZE > floorY || hatY.current < 0) {
+      gameOver();
+      return;
+    }
+
+    // Floor
+    ctx.fillStyle = "#c8b560";
+    ctx.fillRect(0, floorY, CANVAS_WIDTH, 50);
+    ctx.fillStyle = "#73bf2e";
+    ctx.fillRect(0, floorY, CANVAS_WIDTH, 12);
+
+    // Hat
+    if (imgRef.current) {
+      ctx.save();
+      ctx.translate(50 + HAT_SIZE / 2, hatY.current + HAT_SIZE / 2);
+      const tilt = Math.min(Math.PI / 4, Math.max(-Math.PI / 4, hatVelocity.current * 0.09));
+      ctx.rotate(tilt);
+      ctx.drawImage(imgRef.current, -HAT_SIZE / 2, -HAT_SIZE / 2, HAT_SIZE, HAT_SIZE);
+      ctx.restore();
+    } else {
+      ctx.fillStyle = "#ff69b4";
+      ctx.fillRect(50, hatY.current, HAT_SIZE, HAT_SIZE);
+    }
+
+    // HUD — score
+    const hudFont = "14px 'Press Start 2P'";
+    ctx.font = hudFont;
+    ctx.textAlign = "left";
+    ctx.textBaseline = "top";
+    ctx.lineWidth = 3;
+
+    ctx.strokeStyle = "black";
+    ctx.fillStyle = "white";
+    ctx.strokeText(`${scoreRef.current}`, 10, 10);
+    ctx.fillText(`${scoreRef.current}`, 10, 10);
+
+    // HUD — BTH coins
+    ctx.strokeStyle = "black";
+    ctx.fillStyle = "#ffd700";
+    ctx.strokeText(`BTH: ${bthRef.current}`, 10, 34);
+    ctx.fillText(`BTH: ${bthRef.current}`, 10, 34);
+
+    if (gameStateRef.current === "playing") {
+      frameId.current = requestAnimationFrame(gameLoop);
+    }
+  }, [gameOver]);
+
+  const startGame = useCallback(() => {
     hatY.current = CANVAS_HEIGHT / 2;
     hatVelocity.current = 0;
     pipes.current = [];
@@ -85,184 +292,9 @@ export default function Game() {
     setGameState("playing");
     addPipe();
     frameId.current = requestAnimationFrame(gameLoop);
-  };
+  }, [gameLoop]);
 
-  const addPipe = () => {
-    const minGapTop = 50;
-    const maxGapTop = CANVAS_HEIGHT - gapRef.current - 150; // Leave room for floor
-    const gapTop = Math.random() * (maxGapTop - minGapTop) + minGapTop;
-    const hasCoin = Math.random() > 0.5; // 50% chance of a coin appearing
-    pipes.current.push({ x: CANVAS_WIDTH, gapTop, passed: false, hasCoin, coinCollected: false });
-  };
-
-  const flap = () => {
-    if (gameState === "playing") {
-      hatVelocity.current = FLAP_STRENGTH;
-    }
-  };
-
-  const gameOver = () => {
-    setGameState("gameover");
-    if (frameId.current) cancelAnimationFrame(frameId.current);
-    
-    // Submit score
-    submitScore.mutate({ data: { score: scoreRef.current } }, {
-      onSuccess: (data) => {
-        setFinalResult({ isHighScore: data.isHighScore, rank: data.rank });
-      }
-    });
-  };
-
-  const gameLoop = () => {
-    if (!canvasRef.current) return;
-    const ctx = canvasRef.current.getContext("2d");
-    if (!ctx) return;
-
-    // Clear & draw background
-    ctx.fillStyle = "#87CEEB"; // Sky blue
-    ctx.fillRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT);
-
-    // Physics
-    hatVelocity.current += GRAVITY;
-    hatY.current += hatVelocity.current;
-
-    // Draw pipes
-    pipes.current.forEach(pipe => {
-      pipe.x -= speedRef.current;
-
-      // Pipe styling
-      ctx.fillStyle = "#2ecc71"; // Green
-      ctx.strokeStyle = "#27ae60"; // Darker green
-      ctx.lineWidth = 4;
-
-      // Top pipe
-      ctx.fillRect(pipe.x, 0, PIPE_WIDTH, pipe.gapTop);
-      ctx.strokeRect(pipe.x, 0, PIPE_WIDTH, pipe.gapTop);
-      
-      // Bottom pipe
-      const bottomPipeY = pipe.gapTop + gapRef.current;
-      const bottomPipeHeight = CANVAS_HEIGHT - 50 - bottomPipeY; // 50 is floor height
-      ctx.fillRect(pipe.x, bottomPipeY, PIPE_WIDTH, bottomPipeHeight);
-      ctx.strokeRect(pipe.x, bottomPipeY, PIPE_WIDTH, bottomPipeHeight);
-
-      // Draw Coin
-      if (pipe.hasCoin && !pipe.coinCollected) {
-        const coinX = pipe.x + PIPE_WIDTH / 2;
-        const coinY = pipe.gapTop + gapRef.current / 2;
-        
-        ctx.beginPath();
-        ctx.arc(coinX, coinY, 15, 0, Math.PI * 2);
-        ctx.fillStyle = "#ffd700"; // Gold
-        ctx.fill();
-        ctx.strokeStyle = "#b8860b";
-        ctx.stroke();
-        
-        ctx.fillStyle = "#b8860b";
-        ctx.font = "16px 'Press Start 2P'";
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText("B", coinX, coinY + 2); // B for BTH
-
-        // Coin collision check
-        if (
-          Math.abs(coinX - (50 + HAT_SIZE / 2)) < HAT_SIZE / 2 + 15 &&
-          Math.abs(coinY - (hatY.current + HAT_SIZE / 2)) < HAT_SIZE / 2 + 15
-        ) {
-          pipe.coinCollected = true;
-          // You only get BTH coins by passing pipes (300 points = 1 coin), but let's say collecting a coin gives you +50 points
-          scoreRef.current += 50;
-          setScore(scoreRef.current);
-          bthRef.current = Math.floor(scoreRef.current / 300);
-          setBthEarned(bthRef.current);
-        }
-      }
-
-      // Pass pipe -> score
-      if (pipe.x + PIPE_WIDTH < 50 && !pipe.passed) { // 50 is hat X
-        pipe.passed = true;
-        scoreRef.current += 10;
-        setScore(scoreRef.current);
-
-        // Update BTH coins
-        bthRef.current = Math.floor(scoreRef.current / 300);
-        setBthEarned(bthRef.current);
-
-        // Progressive difficulty
-        if (scoreRef.current % 100 === 0) {
-          speedRef.current = Math.min(speedRef.current + 0.5, 7);
-          gapRef.current = Math.max(gapRef.current - 5, 90);
-        }
-      }
-
-      // Collision detection
-      const hatRect = { x: 50 + 5, y: hatY.current + 5, w: HAT_SIZE - 10, h: HAT_SIZE - 10 };
-      const topPipeRect = { x: pipe.x, y: 0, w: PIPE_WIDTH, h: pipe.gapTop };
-      const bottomPipeRect = { x: pipe.x, y: bottomPipeY, w: PIPE_WIDTH, h: bottomPipeHeight };
-
-      if (
-        (hatRect.x < topPipeRect.x + topPipeRect.w && hatRect.x + hatRect.w > topPipeRect.x && hatRect.y < topPipeRect.y + topPipeRect.h) ||
-        (hatRect.x < bottomPipeRect.x + bottomPipeRect.w && hatRect.x + hatRect.w > bottomPipeRect.x && hatRect.y + hatRect.h > bottomPipeRect.y)
-      ) {
-        gameOver();
-      }
-    });
-
-    // Remove off-screen pipes and add new ones
-    if (pipes.current.length > 0 && pipes.current[0].x < -PIPE_WIDTH) {
-      pipes.current.shift();
-    }
-    if (pipes.current.length === 0 || pipes.current[pipes.current.length - 1].x < CANVAS_WIDTH - 200) {
-      addPipe();
-    }
-
-    // Floor collision
-    const floorY = CANVAS_HEIGHT - 50;
-    if (hatY.current + HAT_SIZE > floorY || hatY.current < 0) {
-      gameOver();
-    }
-
-    // Draw Floor
-    ctx.fillStyle = "#ded895";
-    ctx.fillRect(0, floorY, CANVAS_WIDTH, 50);
-    ctx.fillStyle = "#73bf2e";
-    ctx.fillRect(0, floorY, CANVAS_WIDTH, 10); // Grass top
-
-    // Draw Hat
-    if (imgRef.current) {
-      ctx.save();
-      ctx.translate(50 + HAT_SIZE / 2, hatY.current + HAT_SIZE / 2);
-      // Tilt based on velocity
-      const tilt = Math.min(Math.PI / 4, Math.max(-Math.PI / 4, (hatVelocity.current * 0.1)));
-      ctx.rotate(tilt);
-      ctx.drawImage(imgRef.current, -HAT_SIZE / 2, -HAT_SIZE / 2, HAT_SIZE, HAT_SIZE);
-      ctx.restore();
-    } else {
-      ctx.fillStyle = "#ff00ff";
-      ctx.fillRect(50, hatY.current, HAT_SIZE, HAT_SIZE);
-    }
-
-    // Draw HUD
-    ctx.fillStyle = "white";
-    ctx.font = "20px 'Press Start 2P'";
-    ctx.textAlign = "left";
-    ctx.textBaseline = "top";
-    
-    // Score
-    ctx.strokeStyle = "black";
-    ctx.lineWidth = 3;
-    ctx.strokeText(`SCORE:${scoreRef.current}`, 10, 10);
-    ctx.fillText(`SCORE:${scoreRef.current}`, 10, 10);
-
-    // BTH
-    ctx.fillStyle = "#ffd700";
-    ctx.strokeText(`BTH:${bthRef.current}`, 10, 40);
-    ctx.fillText(`BTH:${bthRef.current}`, 10, 40);
-
-    if (gameState === "playing") {
-      frameId.current = requestAnimationFrame(gameLoop);
-    }
-  };
-
+  // Keyboard input
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.code === "Space") {
@@ -272,18 +304,15 @@ export default function Game() {
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [gameState]);
+  }, [flap]);
 
-  if (userLoading) {
-    return (
-      <div className="min-h-[100dvh] flex items-center justify-center bg-black">
-        <Loader2 className="w-8 h-8 text-primary animate-spin" />
-      </div>
-    );
-  }
+  // Cancel animation on unmount
+  useEffect(() => {
+    return () => { if (frameId.current) cancelAnimationFrame(frameId.current); };
+  }, []);
 
   return (
-    <div 
+    <div
       className="min-h-[100dvh] w-full flex items-center justify-center bg-zinc-900 touch-none select-none"
       onPointerDown={flap}
     >
@@ -296,49 +325,52 @@ export default function Game() {
           style={{ imageRendering: "pixelated" }}
         />
 
+        {/* Countdown overlay */}
         {gameState === "countdown" && (
           <div className="absolute inset-0 bg-black/60 flex items-center justify-center z-10">
-            <div className="text-white text-6xl md:text-8xl font-bold animate-bounce drop-shadow-[0_4px_0_#000]">
+            <div className="text-white text-7xl md:text-8xl font-bold drop-shadow-[0_4px_0_hsl(var(--primary))] animate-bounce" style={{ fontFamily: "'Press Start 2P', monospace" }}>
               {countdown}
             </div>
           </div>
         )}
 
+        {/* Game Over overlay */}
         {gameState === "gameover" && (
           <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-20 p-4">
-            <div className="bg-card border-4 border-primary p-6 flex flex-col items-center gap-6 w-full max-w-[300px] shadow-[8px_8px_0_hsl(var(--primary))] animate-in zoom-in-90 duration-200">
-              <h2 className="text-3xl text-destructive drop-shadow-[0_2px_0_#fff] text-center animate-pulse">
-                GAME OVER
+            <div className="bg-card border-4 border-primary p-6 flex flex-col items-center gap-5 w-full max-w-[300px] shadow-[8px_8px_0_hsl(var(--primary))]">
+              <h2 className="text-2xl text-destructive text-center animate-pulse" style={{ fontFamily: "'Press Start 2P', monospace" }}>
+                GAME<br />OVER
               </h2>
-              
-              <div className="w-full space-y-4 bg-black/50 p-4 border border-border">
-                <div className="flex justify-between items-center text-sm">
+
+              <div className="w-full space-y-3 bg-black/50 p-4 border border-border text-xs" style={{ fontFamily: "'Press Start 2P', monospace" }}>
+                <div className="flex justify-between items-center">
                   <span className="text-muted-foreground">SCORE</span>
-                  <span className="text-white font-bold">{score}</span>
+                  <span className="text-white">{score}</span>
                 </div>
-                <div className="flex justify-between items-center text-sm">
-                  <span className="text-muted-foreground">BTH EARNED</span>
-                  <span className="text-accent font-bold">+{bthEarned}</span>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground">BTH</span>
+                  <span className="text-yellow-400">+{bthEarned}</span>
                 </div>
-                {submitScore.isPending ? (
-                  <div className="flex justify-center py-2">
-                    <Loader2 className="w-4 h-4 text-primary animate-spin" />
-                  </div>
-                ) : finalResult?.isHighScore ? (
-                  <div className="text-center text-accent text-xs animate-bounce mt-2">
+                {finalResult?.isHighScore && (
+                  <div className="text-center text-accent text-xs animate-bounce pt-1">
                     NEW HIGH SCORE!
                   </div>
-                ) : null}
+                )}
+                {finalResult?.rank && (
+                  <div className="text-center text-muted-foreground text-xs pt-1">
+                    RANK #{finalResult.rank}
+                  </div>
+                )}
               </div>
 
               <div className="flex flex-col gap-3 w-full">
-                <Button 
+                <Button
                   onClick={() => setGameState("countdown")}
                   className="w-full bg-accent text-accent-foreground hover:bg-accent/90 pixel-button h-12"
                 >
                   PLAY AGAIN
                 </Button>
-                <Button 
+                <Button
                   onClick={() => setLocation("/leaderboard")}
                   variant="outline"
                   className="w-full bg-transparent text-white border-2 border-primary hover:bg-primary/20 pixel-button h-12"
