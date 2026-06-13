@@ -3,13 +3,19 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: Flappy Wif Hat game API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication
+  - name: scores
+    description: Score and leaderboard
+  - name: users
+    description: User profile
 paths:
   /healthz:
     get:
@@ -24,6 +30,158 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /auth/twitter:
+    get:
+      operationId: getTwitterAuthUrl
+      tags: [auth]
+      summary: Get Twitter OAuth URL
+      description: Returns the Twitter OAuth redirect URL
+      responses:
+        "200":
+          description: OAuth URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthUrl"
+
+  /auth/twitter/callback:
+    get:
+      operationId: twitterCallback
+      tags: [auth]
+      summary: Twitter OAuth callback
+      parameters:
+        - name: code
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: state
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: oauth_token
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: oauth_verifier
+          in: query
+          required: false
+          schema:
+            type: string
+      responses:
+        "302":
+          description: Redirect after auth
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current user
+      responses:
+        "200":
+          description: Current user
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+        "401":
+          description: Not authenticated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/logout:
+    post:
+      operationId: logout
+      tags: [auth]
+      summary: Logout
+      responses:
+        "200":
+          description: Logged out
+
+  /auth/guest:
+    post:
+      operationId: guestLogin
+      tags: [auth]
+      summary: Login as guest
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GuestLoginInput"
+      responses:
+        "200":
+          description: Guest user created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/User"
+
+  /scores:
+    post:
+      operationId: submitScore
+      tags: [scores]
+      summary: Submit a game score
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScoreInput"
+      responses:
+        "201":
+          description: Score submitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ScoreResult"
+
+  /leaderboard:
+    get:
+      operationId: getLeaderboard
+      tags: [scores]
+      summary: Get global leaderboard
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            default: 50
+      responses:
+        "200":
+          description: Leaderboard entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/LeaderboardEntry"
+
+  /users/{userId}:
+    get:
+      operationId: getUserProfile
+      tags: [users]
+      summary: Get user profile
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: User profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserProfile"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +192,141 @@ components:
       required:
         - status
 
+    AuthUrl:
+      type: object
+      properties:
+        url:
+          type: string
+      required:
+        - url
+
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        displayName:
+          type: string
+        avatarUrl:
+          type: ["string", "null"]
+        bthCoins:
+          type: integer
+        highScore:
+          type: integer
+        isGuest:
+          type: boolean
+        twitterId:
+          type: ["string", "null"]
+      required:
+        - id
+        - username
+        - displayName
+        - bthCoins
+        - highScore
+        - isGuest
+
+    GuestLoginInput:
+      type: object
+      properties:
+        username:
+          type: string
+          minLength: 1
+          maxLength: 20
+      required:
+        - username
+
+    ScoreInput:
+      type: object
+      properties:
+        score:
+          type: integer
+          minimum: 0
+      required:
+        - score
+
+    ScoreResult:
+      type: object
+      properties:
+        score:
+          type: integer
+        bthCoinsEarned:
+          type: integer
+        totalBthCoins:
+          type: integer
+        isHighScore:
+          type: boolean
+        rank:
+          type: ["integer", "null"]
+      required:
+        - score
+        - bthCoinsEarned
+        - totalBthCoins
+        - isHighScore
+
+    LeaderboardEntry:
+      type: object
+      properties:
+        rank:
+          type: integer
+        userId:
+          type: integer
+        username:
+          type: string
+        displayName:
+          type: string
+        avatarUrl:
+          type: ["string", "null"]
+        highScore:
+          type: integer
+        bthCoins:
+          type: integer
+        isGuest:
+          type: boolean
+      required:
+        - rank
+        - userId
+        - username
+        - displayName
+        - highScore
+        - bthCoins
+        - isGuest
+
+    UserProfile:
+      type: object
+      properties:
+        id:
+          type: integer
+        username:
+          type: string
+        displayName:
+          type: string
+        avatarUrl:
+          type: ["string", "null"]
+        bthCoins:
+          type: integer
+        highScore:
+          type: integer
+        isGuest:
+          type: boolean
+        gamesPlayed:
+          type: integer
+        rank:
+          type: ["integer", "null"]
+      required:
+        - id
+        - username
+        - displayName
+        - bthCoins
+        - highScore
+        - isGuest
+        - gamesPlayed
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
