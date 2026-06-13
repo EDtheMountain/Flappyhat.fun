@@ -62,6 +62,8 @@ export default function Game() {
   const hatImg    = useRef<HTMLImageElement | null>(null);
   const tubeImg   = useRef<HTMLImageElement | null>(null);
   const bgImg     = useRef<HTMLImageElement | null>(null);
+  // Source crop for tube image (auto-detected: strips transparent side padding)
+  const tubeCrop  = useRef<{ sx: number; sw: number; ih: number }>({ sx: 0, sw: 0, ih: 0 });
 
   // ── Dims (computed once on mount) ────────────────────────────────────────
   const D = useRef<Dims>(makeDims(400, 600));
@@ -93,15 +95,41 @@ export default function Game() {
 
   // ── Load images ──────────────────────────────────────────────────────────
   useEffect(() => {
+    // Load hat and background normally
     ([
       [wifhatSrc, hatImg],
-      [tubeSrc,   tubeImg],
       [bgSrc,     bgImg],
     ] as [string, React.MutableRefObject<HTMLImageElement | null>][]).forEach(([src, ref]) => {
       const img = new Image();
       img.src = src;
       img.onload = () => { ref.current = img; };
     });
+
+    // Load tube and auto-detect non-transparent crop region
+    const tube = new Image();
+    tube.src = tubeSrc;
+    tube.onload = () => {
+      tubeImg.current = tube;
+      try {
+        const tc = document.createElement("canvas");
+        tc.width = tube.naturalWidth;
+        tc.height = 1;
+        const tctx = tc.getContext("2d")!;
+        // Sample a row 30% down (inside the pipe body, above the cap)
+        tctx.drawImage(tube, 0, Math.floor(tube.naturalHeight * 0.3), tube.naturalWidth, 1, 0, 0, tube.naturalWidth, 1);
+        const px = tctx.getImageData(0, 0, tube.naturalWidth, 1).data;
+        let left = -1, right = -1;
+        for (let x = 0; x < tube.naturalWidth; x++) {
+          if (px[x * 4 + 3] > 10) { if (left < 0) left = x; right = x; }
+        }
+        if (left >= 0) {
+          tubeCrop.current = { sx: left, sw: right - left + 1, ih: tube.naturalHeight };
+        }
+      } catch {
+        // Cross-origin or security error — fall back to full image
+        tubeCrop.current = { sx: 0, sw: tube.naturalWidth, ih: tube.naturalHeight };
+      }
+    };
   }, []);
 
   // ── Init canvas size ─────────────────────────────────────────────────────
@@ -258,21 +286,22 @@ export default function Game() {
         const bottomY = pipe.gapTop + PIPE_GAP;
         const bottomH = floorY - bottomY;
 
-        if (tubeImg.current) {
-          // Top pipe (cap naturally at bottom, faces the gap)
+        if (tubeImg.current && tubeCrop.current.sw > 0) {
+          const { sx, sw: csw, ih } = tubeCrop.current;
+          // Top pipe — source-crop to non-transparent body, cap at bottom faces the gap
           if (pipe.gapTop > 0) {
-            ctx.drawImage(tubeImg.current, pipe.x, 0, PIPE_W, pipe.gapTop);
+            ctx.drawImage(tubeImg.current, sx, 0, csw, ih, pipe.x, 0, PIPE_W, pipe.gapTop);
           }
-          // Bottom pipe: flip vertically so cap faces up into the gap
+          // Bottom pipe — flip vertically so cap is at top, facing the gap
           if (bottomH > 0) {
             ctx.save();
             ctx.translate(pipe.x + PIPE_W / 2, bottomY + bottomH / 2);
             ctx.scale(1, -1);
-            ctx.drawImage(tubeImg.current, -PIPE_W / 2, -bottomH / 2, PIPE_W, bottomH);
+            ctx.drawImage(tubeImg.current, sx, 0, csw, ih, -PIPE_W / 2, -bottomH / 2, PIPE_W, bottomH);
             ctx.restore();
           }
         } else {
-          // Fallback drawn pipes
+          // Fallback: drawn pipes (used before image loads or if crop fails)
           ctx.fillStyle = "#4ab845";
           ctx.fillRect(pipe.x, 0, PIPE_W, pipe.gapTop);
           ctx.fillRect(pipe.x, bottomY, PIPE_W, bottomH);
