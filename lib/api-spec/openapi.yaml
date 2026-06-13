@@ -284,6 +284,8 @@ components:
           type: integer
         isGuest:
           type: boolean
+        country:
+          type: ["string", "null"]
       required:
         - rank
         - userId

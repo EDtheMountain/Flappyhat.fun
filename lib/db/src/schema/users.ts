@@ -11,6 +11,7 @@ export const usersTable = pgTable("users", {
   twitterAccessToken: text("twitter_access_token"),
   twitterAccessSecret: text("twitter_access_secret"),
   isGuest: boolean("is_guest").notNull().default(false),
+  country: text("country"),           // ISO-3166-1 alpha-2 country code (e.g. "US")
   bthCoins: integer("bth_coins").notNull().default(0),
   highScore: integer("high_score").notNull().default(0),
   gamesPlayed: integer("games_played").notNull().default(0),

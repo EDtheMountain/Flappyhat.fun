@@ -202,8 +202,15 @@ function clusterCount(lv: number): number {
 
 export default function Game() {
   const [, setLocation] = useLocation();
-  const { data: user } = useGetMe({ query: { enabled: true, queryKey: getGetMeQueryKey() } });
+  const { data: user, isError: meError, isLoading: meLoading } = useGetMe({ query: { enabled: true, queryKey: getGetMeQueryKey(), retry: false } });
   const submitScore = useSubmitScore();
+
+  // Redirect to home if not logged in
+  useEffect(() => {
+    if (!meLoading && meError) {
+      setLocation("/");
+    }
+  }, [meLoading, meError, setLocation]);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const hatImg    = useRef<HTMLImageElement | null>(null);

@@ -86,6 +86,7 @@ router.get("/leaderboard", async (req, res): Promise<void> => {
       highScore: usersTable.highScore,
       bthCoins: usersTable.bthCoins,
       isGuest: usersTable.isGuest,
+      country: usersTable.country,
     })
     .from(usersTable)
     .where(sql`${usersTable.highScore} > 0`)
@@ -101,6 +102,7 @@ router.get("/leaderboard", async (req, res): Promise<void> => {
     highScore: e.highScore,
     bthCoins: e.bthCoins,
     isGuest: e.isGuest,
+    country: e.country ?? null,
   }));
 
   res.json(result);

@@ -1,9 +1,25 @@
-import { Router, type IRouter } from "express";
+import { Router, type IRouter, type Request } from "express";
 import crypto from "crypto";
 import { eq } from "drizzle-orm";
 import { db, usersTable } from "@workspace/db";
 import { GuestLoginBody, GuestLoginResponse, GetMeResponse } from "@workspace/api-zod";
 import { logger } from "../lib/logger";
+
+/** Best-effort IP-based country detection. Returns ISO-3166-1 alpha-2 code or null. */
+async function detectCountry(req: Request): Promise<string | null> {
+  try {
+    const forwarded = req.headers["x-forwarded-for"] as string | undefined;
+    const ip = forwarded?.split(",")[0]?.trim() || req.socket?.remoteAddress;
+    if (!ip || ip === "127.0.0.1" || ip === "::1" || ip.startsWith("10.") || ip.startsWith("192.168.")) return null;
+    const resp = await fetch(`http://ip-api.com/json/${encodeURIComponent(ip)}?fields=countryCode`, { signal: AbortSignal.timeout(2000) });
+    if (!resp.ok) return null;
+    const data = await resp.json() as { countryCode?: string };
+    const code = data.countryCode;
+    return code && /^[A-Z]{2}$/.test(code) ? code : null;
+  } catch {
+    return null;
+  }
+}
 
 const router: IRouter = Router();
 
@@ -140,6 +156,8 @@ router.get("/auth/twitter/callback", async (req, res): Promise<void> => {
       where: eq(usersTable.twitterId, twitterId),
     });
 
+    const country = await detectCountry(req);
+
     if (!user) {
       const [newUser] = await db
         .insert(usersTable)
@@ -150,13 +168,18 @@ router.get("/auth/twitter/callback", async (req, res): Promise<void> => {
           twitterAccessToken: accessToken,
           twitterAccessSecret: accessSecret,
           isGuest: false,
+          country,
         })
         .returning();
       user = newUser;
     } else {
       await db
         .update(usersTable)
-        .set({ twitterAccessToken: accessToken, twitterAccessSecret: accessSecret })
+        .set({
+          twitterAccessToken: accessToken,
+          twitterAccessSecret: accessSecret,
+          ...(country && !user.country ? { country } : {}),
+        })
         .where(eq(usersTable.id, user.id));
     }
 
@@ -228,8 +251,13 @@ router.post("/auth/guest", async (req, res): Promise<void> => {
   const existing = await db.query.usersTable.findFirst({
     where: eq(usersTable.username, sanitized),
   });
+  const country = await detectCountry(req);
+
   if (existing && existing.isGuest) {
-    // Reuse guest account
+    // Reuse guest account, update country if not set
+    if (country && !existing.country) {
+      await db.update(usersTable).set({ country }).where(eq(usersTable.id, existing.id));
+    }
     (req.session as { userId?: number }).userId = existing.id;
     res.json(GuestLoginResponse.parse({
       id: existing.id,
@@ -254,6 +282,7 @@ router.post("/auth/guest", async (req, res): Promise<void> => {
       username: finalUsername,
       displayName: username.trim().slice(0, 20),
       isGuest: true,
+      country,
     })
     .returning();
 

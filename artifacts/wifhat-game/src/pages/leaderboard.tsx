@@ -1,116 +1,275 @@
 import { Link } from "wouter";
 import { useGetLeaderboard, useGetMe, getGetMeQueryKey, getGetLeaderboardQueryKey } from "@workspace/api-client-react";
-import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
-import { ChevronLeft } from "lucide-react";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+
+const GOLD = "#ffd700";
+const FONT = '"Courier New", monospace';
+
+function countryFlag(code: string | null | undefined): string {
+  if (!code || code.length !== 2) return "";
+  return code.toUpperCase().split("").map(c =>
+    String.fromCodePoint(0x1F1E6 + c.charCodeAt(0) - 65)
+  ).join("");
+}
+
+function RankBadge({ rank }: { rank: number }) {
+  if (rank === 1) return <span style={{ fontSize: "20px" }}>🥇</span>;
+  if (rank === 2) return <span style={{ fontSize: "20px" }}>🥈</span>;
+  if (rank === 3) return <span style={{ fontSize: "20px" }}>🥉</span>;
+  return (
+    <span style={{
+      color: "rgba(255,215,0,0.45)", fontFamily: FONT,
+      fontSize: "13px", fontWeight: "bold",
+    }}>
+      #{rank}
+    </span>
+  );
+}
+
+function Avatar({ src, name }: { src: string | null | undefined; name: string }) {
+  return src ? (
+    <img src={src} alt="" style={{ width: 32, height: 32, borderRadius: "50%", border: "1px solid rgba(255,215,0,0.35)", flexShrink: 0 }} />
+  ) : (
+    <div style={{
+      width: 32, height: 32, borderRadius: "50%",
+      background: "rgba(255,215,0,0.1)",
+      border: "1px solid rgba(255,215,0,0.25)",
+      display: "flex", alignItems: "center", justifyContent: "center",
+      color: GOLD, fontSize: "11px", fontWeight: "bold", flexShrink: 0,
+    }}>
+      {name.substring(0, 2).toUpperCase()}
+    </div>
+  );
+}
+
+function SkeletonRow() {
+  return (
+    <div style={{
+      display: "grid", gridTemplateColumns: "3rem 1fr 5rem 5rem",
+      gap: "12px", padding: "12px 8px",
+      borderBottom: "1px solid rgba(255,215,0,0.06)",
+    }}>
+      {[...Array(4)].map((_, i) => (
+        <div key={i} style={{
+          height: "20px", borderRadius: "4px",
+          background: "rgba(255,255,255,0.05)",
+          animation: "shimmer 1.4s ease-in-out infinite",
+        }} />
+      ))}
+    </div>
+  );
+}
 
 export default function Leaderboard() {
-  const { data: user } = useGetMe({ query: { enabled: true, queryKey: getGetMeQueryKey() } });
-  const { data: leaderboard, isLoading } = useGetLeaderboard({ limit: 50 }, { query: { queryKey: getGetLeaderboardQueryKey({ limit: 50 }) } });
+  const { data: user } = useGetMe({ query: { enabled: true, queryKey: getGetMeQueryKey(), retry: false } });
+  const { data: leaderboard, isLoading } = useGetLeaderboard(
+    { limit: 50 },
+    { query: { queryKey: getGetLeaderboardQueryKey({ limit: 50 }) } }
+  );
 
   return (
-    <div className="min-h-[100dvh] bg-background text-foreground p-4 md:p-8 flex flex-col items-center">
-      <div className="w-full max-w-2xl flex flex-col gap-6 relative z-10">
-        
+    <div style={{
+      minHeight: "100dvh", width: "100%",
+      background: "linear-gradient(180deg, #050510 0%, #0a0d1e 60%, #060914 100%)",
+      fontFamily: FONT,
+      display: "flex", flexDirection: "column", alignItems: "center",
+      padding: "0 16px 48px",
+    }}>
+      {/* Marquee */}
+      <div style={{
+        position: "fixed", top: 0, left: 0, right: 0, height: "28px",
+        background: "linear-gradient(90deg, #050510, #0d0f22, #050510)",
+        borderBottom: "1px solid rgba(255,215,0,0.3)",
+        display: "flex", alignItems: "center",
+        overflow: "hidden", zIndex: 200,
+      }}>
+        <div style={{
+          color: GOLD, fontSize: "11px", fontFamily: FONT, fontWeight: "bold",
+          whiteSpace: "nowrap",
+          animation: "marquee 28s linear infinite",
+        }}>
+          &nbsp;&nbsp;&nbsp;$BTH — FLAPPY WIF HAT — COLLECT COINS — BEAT THE LEADERBOARD — $BTH — FLAPPY WIF HAT — COLLECT COINS — BEAT THE LEADERBOARD &nbsp;&nbsp;&nbsp;
+        </div>
+      </div>
+
+      <div style={{ maxWidth: "640px", width: "100%", marginTop: "52px", display: "flex", flexDirection: "column", gap: "20px" }}>
+
         {/* Header */}
-        <div className="flex items-center justify-between">
-          <Button asChild variant="ghost" size="icon" className="hover:bg-primary/20 text-primary">
-            <Link href={user ? "/game" : "/"}>
-              <ChevronLeft className="w-8 h-8" />
-            </Link>
-          </Button>
-          <h1 className="text-2xl md:text-3xl text-primary drop-shadow-[0_2px_0_hsl(var(--primary-foreground))]">
-            GLOBAL RANKS
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+          <Link href={user ? "/game" : "/"}>
+            <span style={{
+              color: "rgba(255,215,0,0.55)", fontSize: "20px", cursor: "pointer",
+              padding: "4px 8px",
+            }}>‹</span>
+          </Link>
+          <h1 style={{
+            color: GOLD, fontFamily: FONT,
+            fontSize: "clamp(18px, 5vw, 26px)",
+            fontWeight: "bold", letterSpacing: "0.08em",
+            textShadow: "0 0 16px rgba(255,215,0,0.4)",
+            margin: 0,
+          }}>
+            🏆 GLOBAL LEADERBOARD
           </h1>
-          <div className="w-10"></div> {/* Spacer for centering */}
+          <div style={{ width: 32 }} />
         </div>
 
-        {/* User Stats if logged in */}
+        {/* My stats card (if logged in) */}
         {user && (
-          <div className="bg-card border-2 border-secondary p-4 flex justify-between items-center">
-            <div className="flex items-center gap-4">
-              <Avatar className="w-12 h-12 border-2 border-white pixel-border rounded-none">
-                <AvatarImage src={user.avatarUrl || undefined} />
-                <AvatarFallback className="bg-secondary text-secondary-foreground rounded-none text-xs">
-                  {user.displayName.substring(0, 2).toUpperCase()}
-                </AvatarFallback>
-              </Avatar>
+          <div style={{
+            background: "rgba(255,215,0,0.06)",
+            border: "1.5px solid rgba(255,215,0,0.35)",
+            borderRadius: "10px", padding: "14px 16px",
+            display: "flex", justifyContent: "space-between", alignItems: "center",
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+              <Avatar src={user.avatarUrl} name={user.displayName} />
               <div>
-                <div className="text-sm text-muted-foreground">YOUR BEST</div>
-                <div className="text-xl text-white">{user.highScore}</div>
+                <div style={{ color: "#fff", fontWeight: "bold", fontSize: "13px" }}>{user.displayName}</div>
+                <div style={{ color: "rgba(255,215,0,0.45)", fontSize: "11px" }}>{user.isGuest ? "GUEST" : "X USER"}</div>
               </div>
             </div>
-            <div className="text-right">
-              <div className="text-sm text-muted-foreground">TOTAL BTH</div>
-              <div className="text-xl text-accent">{user.bthCoins}</div>
+            <div style={{ display: "flex", gap: "24px" }}>
+              <div style={{ textAlign: "right" }}>
+                <div style={{ color: "rgba(255,215,0,0.45)", fontSize: "10px", letterSpacing: "0.06em" }}>BEST SCORE</div>
+                <div style={{ color: "#fff", fontWeight: "bold", fontSize: "16px" }}>{user.highScore}</div>
+              </div>
+              <div style={{ textAlign: "right" }}>
+                <div style={{ color: "rgba(255,215,0,0.45)", fontSize: "10px", letterSpacing: "0.06em" }}>$BTH</div>
+                <div style={{ color: GOLD, fontWeight: "bold", fontSize: "16px" }}>{user.bthCoins}</div>
+              </div>
             </div>
           </div>
         )}
 
-        {/* Leaderboard Table */}
-        <div className="bg-black/50 border-4 border-primary p-4 shadow-[8px_8px_0_hsl(var(--primary))]">
-          <div className="grid grid-cols-[3rem_1fr_4rem_4rem] md:grid-cols-[4rem_1fr_6rem_6rem] gap-2 md:gap-4 mb-4 text-xs md:text-sm text-muted-foreground border-b border-border pb-2">
-            <div className="text-center">RANK</div>
-            <div>PLAYER</div>
-            <div className="text-right">SCORE</div>
-            <div className="text-right">BTH</div>
+        {/* Leaderboard table */}
+        <div style={{
+          background: "rgba(5,5,18,0.85)",
+          border: "1.5px solid rgba(255,215,0,0.25)",
+          borderRadius: "12px",
+          overflow: "hidden",
+          boxShadow: "0 0 32px rgba(255,215,0,0.06)",
+        }}>
+          {/* Column headers */}
+          <div style={{
+            display: "grid", gridTemplateColumns: "3rem 1fr 5rem 5rem",
+            gap: "12px", padding: "10px 16px",
+            borderBottom: "1px solid rgba(255,215,0,0.15)",
+            background: "rgba(255,215,0,0.04)",
+          }}>
+            <div style={{ color: "rgba(255,215,0,0.4)", fontSize: "10px", letterSpacing: "0.08em", textAlign: "center" }}>RANK</div>
+            <div style={{ color: "rgba(255,215,0,0.4)", fontSize: "10px", letterSpacing: "0.08em" }}>PLAYER</div>
+            <div style={{ color: "rgba(255,215,0,0.4)", fontSize: "10px", letterSpacing: "0.08em", textAlign: "right" }}>SCORE</div>
+            <div style={{ color: "rgba(255,215,0,0.4)", fontSize: "10px", letterSpacing: "0.08em", textAlign: "right" }}>$BTH</div>
           </div>
 
-          <div className="flex flex-col gap-2">
-            {isLoading ? (
-              Array.from({ length: 10 }).map((_, i) => (
-                <div key={i} className="flex items-center gap-4 h-14">
-                  <Skeleton className="h-full w-full bg-zinc-800" />
-                </div>
-              ))
-            ) : leaderboard?.length === 0 ? (
-              <div className="text-center py-8 text-muted-foreground">
-                No scores yet. Be the first!
-              </div>
-            ) : (
-              leaderboard?.map((entry) => (
-                <div 
+          {/* Rows */}
+          {isLoading ? (
+            [...Array(8)].map((_, i) => <SkeletonRow key={i} />)
+          ) : !leaderboard?.length ? (
+            <div style={{ textAlign: "center", padding: "48px 16px", color: "rgba(255,215,0,0.35)", fontSize: "13px" }}>
+              No scores yet. Be the first! 🎮
+            </div>
+          ) : (
+            leaderboard.map((entry) => {
+              const isMe = user?.id === entry.userId;
+              const flag = countryFlag(entry.country);
+              return (
+                <div
                   key={entry.userId}
-                  className={`grid grid-cols-[3rem_1fr_4rem_4rem] md:grid-cols-[4rem_1fr_6rem_6rem] gap-2 md:gap-4 items-center p-2 border border-transparent transition-colors ${
-                    user?.id === entry.userId ? "bg-primary/20 border-primary" : "hover:bg-zinc-800/50"
-                  }`}
+                  style={{
+                    display: "grid", gridTemplateColumns: "3rem 1fr 5rem 5rem",
+                    gap: "12px", padding: "12px 16px",
+                    borderBottom: "1px solid rgba(255,215,0,0.06)",
+                    background: isMe ? "rgba(255,215,0,0.08)" : "transparent",
+                    borderLeft: isMe ? `2px solid ${GOLD}` : "2px solid transparent",
+                    transition: "background 0.15s",
+                  }}
                 >
-                  <div className={`text-center font-bold text-lg md:text-xl ${
-                    entry.rank === 1 ? "text-accent drop-shadow-[0_2px_0_#000]" : 
-                    entry.rank === 2 ? "text-zinc-300" : 
-                    entry.rank === 3 ? "text-amber-600" : "text-muted-foreground"
-                  }`}>
-                    #{entry.rank}
+                  {/* Rank */}
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                    <RankBadge rank={entry.rank} />
                   </div>
-                  
-                  <div className="flex items-center gap-3 overflow-hidden">
-                    <Avatar className="w-8 h-8 md:w-10 md:h-10 border border-white rounded-none shrink-0 hidden md:block">
-                      <AvatarImage src={entry.avatarUrl || undefined} />
-                      <AvatarFallback className="bg-zinc-800 rounded-none text-[10px]">
-                        {entry.displayName.substring(0, 2).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="truncate text-xs md:text-sm text-white">
-                      {entry.displayName}
-                      {entry.isGuest && <span className="ml-2 text-[8px] text-muted-foreground border border-muted-foreground px-1 py-0.5">GUEST</span>}
+
+                  {/* Player */}
+                  <div style={{ display: "flex", alignItems: "center", gap: "10px", overflow: "hidden" }}>
+                    <Avatar src={entry.avatarUrl} name={entry.displayName} />
+                    <div style={{ overflow: "hidden" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
+                        {flag && <span style={{ fontSize: "16px", lineHeight: 1 }}>{flag}</span>}
+                        <span style={{
+                          color: isMe ? GOLD : "#e0e0e0",
+                          fontWeight: isMe ? "bold" : "normal",
+                          fontSize: "13px",
+                          overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                        }}>
+                          {entry.displayName}
+                        </span>
+                      </div>
+                      {entry.isGuest && (
+                        <span style={{
+                          fontSize: "9px", color: "rgba(255,255,255,0.28)",
+                          border: "1px solid rgba(255,255,255,0.18)",
+                          padding: "1px 4px", borderRadius: "3px", letterSpacing: "0.06em",
+                        }}>GUEST</span>
+                      )}
                     </div>
                   </div>
-                  
-                  <div className="text-right text-sm md:text-base font-bold text-white">
-                    {entry.highScore}
+
+                  {/* Score */}
+                  <div style={{
+                    textAlign: "right", fontWeight: "bold",
+                    color: entry.rank <= 3 ? GOLD : "#e0e0e0",
+                    fontSize: "14px",
+                    display: "flex", alignItems: "center", justifyContent: "flex-end",
+                  }}>
+                    {entry.highScore.toLocaleString()}
                   </div>
-                  
-                  <div className="text-right text-xs md:text-sm text-accent">
+
+                  {/* $BTH */}
+                  <div style={{
+                    textAlign: "right", color: GOLD, fontSize: "13px",
+                    display: "flex", alignItems: "center", justifyContent: "flex-end",
+                    gap: "3px",
+                  }}>
+                    <span style={{ fontSize: "11px", opacity: 0.6 }}>🪙</span>
                     {entry.bthCoins}
                   </div>
                 </div>
-              ))
-            )}
-          </div>
+              );
+            })
+          )}
+        </div>
+
+        {/* Play button */}
+        <div style={{ textAlign: "center" }}>
+          <Link href={user ? "/game" : "/"}>
+            <span style={{
+              display: "inline-block",
+              padding: "12px 32px",
+              background: "linear-gradient(135deg, rgba(255,215,0,0.18), rgba(255,185,0,0.1))",
+              border: "1.5px solid rgba(255,215,0,0.45)",
+              borderRadius: "8px",
+              color: GOLD, fontFamily: FONT, fontWeight: "bold",
+              fontSize: "14px", cursor: "pointer", letterSpacing: "0.07em",
+              boxShadow: "0 0 12px rgba(255,215,0,0.12)",
+            }}>
+              {user ? "▶ PLAY NOW" : "⬅ BACK"}
+            </span>
+          </Link>
         </div>
 
       </div>
+
+      <style>{`
+        @keyframes marquee {
+          from { transform: translateX(0); }
+          to { transform: translateX(-50%); }
+        }
+        @keyframes shimmer {
+          0%, 100% { opacity: 0.5; }
+          50% { opacity: 1; }
+        }
+      `}</style>
     </div>
   );
 }

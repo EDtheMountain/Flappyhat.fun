@@ -16,4 +16,6 @@ export interface LeaderboardEntry {
   highScore: number;
   bthCoins: number;
   isGuest: boolean;
+  /** @nullable */
+  country?: string | null;
 }

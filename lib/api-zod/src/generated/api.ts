@@ -104,7 +104,8 @@ export const GetLeaderboardResponseItem = zod.object({
   "avatarUrl": zod.string().nullish(),
   "highScore": zod.number(),
   "bthCoins": zod.number(),
-  "isGuest": zod.boolean()
+  "isGuest": zod.boolean(),
+  "country": zod.string().nullish()
 })
 export const GetLeaderboardResponse = zod.array(GetLeaderboardResponseItem)
 
