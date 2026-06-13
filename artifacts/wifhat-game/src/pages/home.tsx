@@ -1,17 +1,15 @@
 import { useState } from "react";
 import { Link, useLocation } from "wouter";
-import { useGetMe, getGetMeQueryKey, useGuestLogin, useGetTwitterAuthUrl } from "@workspace/api-client-react";
+import { useGetMe, getGetMeQueryKey, useGuestLogin } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import wifhatImg from "@assets/Wifhat_1781355793327.png";
-import { SiX } from "react-icons/si";
 
 export default function Home() {
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
   const { data: user } = useGetMe({ query: { enabled: true, queryKey: getGetMeQueryKey() } });
-  const { data: twitterUrlData } = useGetTwitterAuthUrl({ query: { enabled: !user, queryKey: ['getTwitterAuthUrl'] } });
   const guestLogin = useGuestLogin();
   
   const [username, setUsername] = useState("");
@@ -65,23 +63,6 @@ export default function Home() {
             </div>
           ) : (
             <div className="flex flex-col gap-6">
-              <Button 
-                asChild
-                className="w-full h-14 bg-black text-white hover:bg-zinc-800 text-sm pixel-button flex items-center gap-3"
-                data-testid="button-twitter-auth"
-              >
-                <a href={twitterUrlData?.url || "#"}>
-                  <SiX className="w-5 h-5" />
-                  Sign in with X
-                </a>
-              </Button>
-              
-              <div className="relative flex items-center py-2">
-                <div className="flex-grow border-t border-muted-foreground/30"></div>
-                <span className="flex-shrink-0 mx-4 text-muted-foreground text-xs">OR</span>
-                <div className="flex-grow border-t border-muted-foreground/30"></div>
-              </div>
-
               <form onSubmit={handleGuestLogin} className="flex flex-col gap-3">
                 <Input 
                   placeholder="Enter guest name" 
