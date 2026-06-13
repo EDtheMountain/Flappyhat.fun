@@ -1,0 +1,296 @@
+================================================================
+        FLAPPY HAT — DESIGN SYSTEM & STYLE GUIDE
+        $BTH Token Game · Version 1.0 · flappyhat.fun
+================================================================
+
+
+----------------------------------------------------------------
+  1. TYPOGRAPHY
+----------------------------------------------------------------
+
+  Font Family : Courier New, monospace
+  Font Weight : Bold (titles, buttons, scores)
+               Regular (hints, labels, fine print)
+  Rendering   : Pixel-perfect (image-rendering: pixelated)
+  Style Mood  : Retro crypto arcade
+
+
+  FONT SIZE SCALE (dynamic, based on canvas height GH)
+  ┌─────────────────────────────┬─────────────┬──────────┬─────────┐
+  │ Element                     │ Formula     │ Desktop  │ Mobile  │
+  ├─────────────────────────────┼─────────────┼──────────┼─────────┤
+  │ Main Title (FLAPPY HAT)     │ GH × 0.054  │ ~54px    │ ~32px   │
+  │ Score Number                │ GH × 0.036  │ ~36px    │ ~22px   │
+  │ $BTH Count                  │ GH × 0.030  │ ~30px    │ ~18px   │
+  │ Button Labels               │ GH × 0.026  │ ~26px    │ ~15px   │
+  │ Body / Subtext              │ GH × 0.022  │ ~22px    │ ~13px   │
+  │ Labels / Hints              │ GH × 0.018  │ ~18px    │ ~11px   │
+  │ Small Labels                │ GH × 0.015  │ ~15px    │ ~9px    │
+  │ Fine Print                  │ GH × 0.013  │ ~13px    │ ~8px    │
+  └─────────────────────────────┴─────────────┴──────────┴─────────┘
+
+
+----------------------------------------------------------------
+  2. COLOR PALETTE
+----------------------------------------------------------------
+
+  ── CORE / BACKGROUND ────────────────────────────────────────
+
+  Sky Blue          #55e2eb     Page background, canvas fill
+  Deep Navy         #0a0a18     Announcement bar background
+  Dark Panel        #08121c     UI panel fill (85% opacity)
+  Midnight          #0d1220     Modal backgrounds
+
+
+  ── PRIMARY BRAND ($BTH) ─────────────────────────────────────
+
+  BTH Gold          #ffd700     Titles, buttons, coins, borders
+  Gold Dark         #b89000     Coin stroke / outline
+  Gold Letter       #9a7800     Coin "B" text
+
+
+  ── TEXT ─────────────────────────────────────────────────────
+
+  White             #ffffff             Primary text, scores
+  White 70%         rgba(255,255,255,0.70)  Panel labels
+  White 55%         rgba(255,255,255,0.55)  Secondary hints
+  White 45%         rgba(255,255,255,0.45)  Tertiary / fine print
+  Gold Text         rgba(255,215,0,0.75)    $BTH labels
+  Lavender          #aaaaff             Best score text
+
+
+  ── STATUS / FEEDBACK ────────────────────────────────────────
+
+  Safe Green        #50ffaa             Plays left (plenty, >3)
+  Warning Gold      #ffd700             Plays left (low, 1–3)
+  Danger Red        #ff6060             No plays left
+  Game Over Pink    #ff4466             Game Over screen title
+  Error Red         #ff4444             Error modals
+  Verified Green    rgba(29,200,100,0.95)   Verified X account badge
+  X Blue            rgba(29,161,242,0.85)   X login button accent
+
+
+  ── COUNTDOWN COLORS ─────────────────────────────────────────
+
+  3                 #ff4444     Red
+  2                 #ff9900     Orange
+  1                 #ffdd00     Yellow
+  GO!               #44ff88     Green
+
+
+  ── GAME WORLD ───────────────────────────────────────────────
+
+  Pipe Body         #4ab845     Main pipe fill
+  Pipe Highlight    #5fd060     Pipe light edge
+  Pipe Dark         #256a30     Pipe shadow edge
+  Pipe Cap          #40b858     Cap / flange
+  Ground Dark       #3a6025     Ground base
+  Ground Light      #4a7830     Ground top strip
+  Coin Gold         #ffd700     Coin fill
+  Coin Border       #b89000     Coin stroke
+
+
+  ── INSTALL BUTTONS ──────────────────────────────────────────
+
+  Android Green     rgba(61,220,130,0.90)   Android button text
+  Android Border    rgba(61,220,130,0.45)   Android button border
+  Android Fill      rgba(61,220,130,0.12)   Android button background
+  iOS Light         rgba(220,220,255,0.90)  iOS button text
+  iOS Border        rgba(200,200,220,0.38)  iOS button border
+  iOS Fill          rgba(200,200,220,0.10)  iOS button background
+
+
+----------------------------------------------------------------
+  3. UI COMPONENT STYLES
+----------------------------------------------------------------
+
+  ── PANELS ───────────────────────────────────────────────────
+
+  Background   :  rgba(8, 12, 28, 0.85)
+  Border       :  1.5px solid rgba(255, 215, 0, 0.32)
+  Border Radius:  10px – 14px
+  Glow (focus) :  shadowColor rgba(255,215,0,0.3), shadowBlur 16
+
+
+  ── BUTTONS (primary / gold) ─────────────────────────────────
+
+  Fill         :  rgba(255, 215, 0, 0.18)
+  Border       :  1.5px solid rgba(255, 215, 0, 0.55)
+  Border Radius:  8px
+  Text Color   :  #ffd700
+  Font         :  bold Courier New
+  Text Align   :  center
+
+
+  ── BUTTONS (secondary / ghost) ──────────────────────────────
+
+  Fill         :  rgba(255, 255, 255, 0.06)
+  Border       :  1px solid rgba(255, 215, 0, 0.30)
+  Border Radius:  8px
+  Text Color   :  rgba(255, 215, 0, 0.75)
+
+
+  ── BUTTONS (disabled / no plays) ────────────────────────────
+
+  Fill         :  rgba(255, 100, 100, 0.12)
+  Border       :  1.5px solid rgba(255, 100, 100, 0.35)
+  Text Color   :  rgba(255, 100, 100, 0.70)
+
+
+  ── PROGRESS BAR ($BTH progress) ─────────────────────────────
+
+  Track        :  rgba(255, 215, 0, 0.15)
+  Fill         :  #ffd700
+  Height       :  4px
+  Border Radius:  2px
+
+
+  ── OVERLAYS ─────────────────────────────────────────────────
+
+  Light dim    :  rgba(0, 0, 0, 0.50)    Start screen
+  Medium dim   :  rgba(0, 0, 0, 0.65)    Game Over screen
+  Heavy dim    :  rgba(0, 0, 0, 0.72)    Leaderboard
+  Modal dim    :  rgba(0, 0, 0, 0.82)    iOS install / error modal
+
+
+  ── ANNOUNCEMENT BAR ─────────────────────────────────────────
+
+  Background   :  linear-gradient(90deg, #0a0a18, #111128, #0a0a18)
+  Border Bottom:  1px solid rgba(255, 215, 0, 0.35)
+  Height       :  28px
+  Text Color   :  #ffd700 (gold), rgba(255,215,0,0.50) (dim)
+  Animation    :  CSS marquee scroll, 28s linear infinite
+
+
+  ── LEADERBOARD ROWS ─────────────────────────────────────────
+
+  #1 Gold row  :  rgba(255, 215, 0, 0.08)    text #ffd700
+  #2 Silver row:  rgba(200, 200, 220, 0.05)  text #c0c0c0
+  #3 Bronze row:  rgba(180, 140, 60, 0.05)   text #cd7f32
+  Other rows   :  transparent                text rgba(255,255,255,0.78)
+  Current user :  highlighted in #ffe066
+
+
+----------------------------------------------------------------
+  4. LAYOUT & SPACING
+----------------------------------------------------------------
+
+  Canvas orientation  :  Landscape on desktop (full viewport)
+                         Portrait on mobile (400px wide, scaled)
+  Announcement bar    :  Fixed top, 28px height, z-index 200
+  Panel padding       :  GH × 0.024 (inner top/bottom)
+  Element gap         :  GH × 0.016 (between stacked elements)
+  Side padding        :  14–16px from panel edge
+  Max panel width     :  380px (portrait) / 520px (leaderboard)
+
+
+----------------------------------------------------------------
+  5. EFFECTS & ANIMATION
+----------------------------------------------------------------
+
+  Glow / Shadow
+  ─────────────
+  Panel glow     :  shadowColor #ffd700,  shadowBlur 16
+  Title glow     :  shadowColor [countdown color], shadowBlur 40
+  Verified badge :  shadowColor rgba(29,161,242,0.5), shadowBlur 12
+  Coin pulse     :  scale = 1 + sin(frame × 0.08) × 0.07
+
+  Particle Effects
+  ────────────────
+  Coin collect   :  10 gold sparks (#ffd700), radial burst
+  Death          :  22 pink sparks (#ff6688), radial burst
+  Flap           :  5 pink sparks (#ffccdd), upward
+  Life           :  fade out over ~35 frames, gravity 0.12
+
+  Float Texts
+  ───────────
+  +10            :  white, floats up, fades over 1.4s
+  +25 $BTH       :  gold (#ffd700), floats up, fades over 1.4s
+
+  Countdown
+  ─────────
+  Scale          :  starts 1.6×, shrinks to 1.0× over 1 second
+  Transition     :  one number per second, 4 steps (3,2,1,GO!)
+  Shadow blur    :  40px matching countdown color
+
+  Background
+  ──────────
+  Scroll speed   :  GW ÷ 140 pixels per frame
+  Cloud parallax :  0.13× – 0.24× scroll speed (layered depth)
+  Countdown idle :  0.4× scroll speed (slow drift)
+
+  Screen Shake
+  ────────────
+  Trigger        :  On death, shake = 14
+  Decay          :  shake × 0.78 per frame
+  Direction      :  random ± shake pixels (X and Y)
+
+
+----------------------------------------------------------------
+  6. AUDIO (Web Audio API — procedural, no files)
+----------------------------------------------------------------
+
+  Flap sound     :  Sine wave, 320Hz → 560Hz, 80ms, vol 0.18
+  Coin collect   :  Sine 880Hz → 1200Hz (60ms) +
+                    Sine 1100Hz → 900Hz (120ms), vol 0.22
+  Pipe pass      :  Square wave, 440Hz → 660Hz, 60ms, vol 0.08
+  Death          :  Noise burst bandpass 900→80Hz (350ms) +
+                    Sawtooth 160→60Hz (400ms), vol 0.45
+  Game start     :  Sine 440 → 550 → 660 → 880Hz cascade
+  Countdown 3    :  Square 220Hz, 120ms
+  Countdown 2    :  Square 330Hz, 120ms
+  Countdown 1    :  Square 440Hz, 120ms
+  GO!            :  Sine 880→1200Hz + 1200→880Hz chime
+
+
+----------------------------------------------------------------
+  7. GAME CONSTANTS
+----------------------------------------------------------------
+
+  Gravity        :  GH × 0.00063  per frame
+  Flap force     :  -(GH × 0.013)
+  Scroll speed   :  GW ÷ 140  px/frame
+  Pipe gap       :  GH × 0.275
+  Pipe width     :  GH × 0.092
+  Cap height     :  pipe_width × 0.50
+  Cap overhang   :  pipe_width × 0.055  each side
+  Ground height  :  GH × 0.115
+  Min pipe topH  :  max(CAP_H + 18, GH × 0.16)
+  Hat width      :  GH × 0.115
+  Hat height     :  hat_width × 0.80
+  Pipe interval  :  1900ms
+  Daily limit    :  10 plays per day (resets at midnight)
+  Score / pipe   :  +10 points
+  Score / coin   :  +25 points
+  $BTH rate      :  1 $BTH per 100 score points
+
+
+----------------------------------------------------------------
+  8. SCORING SYSTEM
+----------------------------------------------------------------
+
+  Pass a pipe gap    →  +10 points
+  Collect a coin     →  +25 points
+  100 points         →  1 $BTH coin (V1: practice only)
+  High score         →  saved locally per browser session
+  Global leaderboard →  top 10 per unique username (Supabase)
+  Daily cap          →  10 games per day, resets at midnight
+
+
+----------------------------------------------------------------
+  9. ASSET REFERENCES
+----------------------------------------------------------------
+
+  Main character   :  Wifhat.png      (pink pixel art beanie)
+  Obstacle pipe    :  Tube.webp       (green pixel pipe + cap)
+  Background       :  Background_1.png (pixel city skyline)
+  Cloud A          :  cloud_1_1.png   (rounded white cloud)
+  Cloud B          :  cloud_1_2.png   (rounded white cloud)
+  App icon 192px   :  icon-192.png    (hat on sky background)
+  App icon 512px   :  icon-512.png    (hat on sky background)
+  OG preview image :  og-image.png    (1200×630px share card)
+
+
+================================================================
+  END OF DESIGN SYSTEM — FLAPPY HAT · $BTH · flappyhat.fun
+================================================================
