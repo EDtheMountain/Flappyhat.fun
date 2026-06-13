@@ -34,7 +34,9 @@ function makeDims(GW: number, GH: number) {
     GW, GH,
     GRAVITY:    GH * 0.00063,
     FLAP:      -(GH * 0.013),
-    SCROLL:     GW / 140,
+    // Base scroll tuned to match original Flappy Bird feel (~0.625 screen-widths/s at 60fps).
+    // Delta-time correction in the game loop makes this monitor-refresh-rate independent.
+    SCROLL:     GW / 220,
     PIPE_GAP:   GH * 0.275,
     PIPE_W, CAP_H,
     GROUND_H:   GH * 0.115,
@@ -46,6 +48,7 @@ function makeDims(GW: number, GH: number) {
     SCORE_SIZE: Math.round(GH * 0.036),
     BTH_SIZE:   Math.round(GH * 0.028),
     LVL_SIZE:   Math.round(GH * 0.022),
+    COMBO_SIZE: Math.round(GH * 0.024),
     FLOAT_SIZE: Math.round(GH * 0.022),
   };
 }
@@ -166,9 +169,24 @@ function drawCloud(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: num
 
 // ── Level helpers ─────────────────────────────────────────────────────────────
 function levelT(lv: number)                      { return (Math.min(100, lv) - 1) / 99; }
-function levelScroll(base: number, lv: number)   { return base * (1 + levelT(lv) * 1.1); }
+// Max speed is 1.75× base (GW/125 at level 100) — fast but not unplayable
+function levelScroll(base: number, lv: number)   { return base * (1 + levelT(lv) * 0.75); }
 function levelGap(base: number, lv: number)      { return base * (1 - levelT(lv) * 0.48); }
 function levelInterval(lv: number)               { return Math.max(1150, 1900 - levelT(lv) * 750); }
+
+// ── Combo helpers ─────────────────────────────────────────────────────────────
+function comboMult(combo: number): number {
+  if (combo >= 20) return 4;
+  if (combo >= 10) return 3;
+  if (combo >= 5)  return 2;
+  return 1;
+}
+function comboColor(mult: number): string {
+  if (mult >= 4) return "#ff3311";
+  if (mult >= 3) return "#ff8800";
+  if (mult >= 2) return "#ffdd00";
+  return "#ffffff";
+}
 
 /** Number of pipes in the next cluster, based on current level */
 function clusterCount(lv: number): number {
@@ -213,10 +231,12 @@ export default function Game() {
   const bthRef         = useRef(0);
   const levelRef       = useRef(1);
   const pipesPassedRef = useRef(0);
+  const comboRef       = useRef(0);   // consecutive pipes passed without dying
   const shakeRef       = useRef(0);
   const bgOffset       = useRef(0);
   const lastPipeTs     = useRef(0);
   const lastFreeCoinTs = useRef(0);
+  const prevTsRef      = useRef(0);   // for delta-time frame-rate independence
   const frameId        = useRef(0);
   const loopRef        = useRef<FrameRequestCallback>(() => {});
 
@@ -345,10 +365,12 @@ export default function Game() {
     bthRef.current = 0;
     levelRef.current = 1;
     pipesPassedRef.current = 0;
+    comboRef.current = 0;
     shakeRef.current = 0;
     bgOffset.current = 0;
     lastPipeTs.current = 0;
     lastFreeCoinTs.current = 0;
+    prevTsRef.current = 0;
     setScore(0); setBthEarned(0); setLevel(1); setFinalResult(null);
     initClouds();
     setPhase("playing");
@@ -386,11 +408,14 @@ export default function Game() {
       const { GW, GH, GRAVITY, SCROLL, PIPE_GAP, PIPE_W, CAP_H, GROUND_H, HAT_W, HAT_H, HAT_X, COIN_R } = d;
       const floorY = GH - GROUND_H;
 
+      // ── Delta-time (frame-rate independence: 60fps = dt 1.0) ────────────
+      const dt = prevTsRef.current === 0 ? 1 : Math.min((ts - prevTsRef.current) / 16.667, 2.5);
+      prevTsRef.current = ts;
+
       const lv           = levelRef.current;
-      const curScroll    = levelScroll(SCROLL, lv);
+      const curScroll    = levelScroll(SCROLL, lv) * dt;
       const curGap       = levelGap(PIPE_GAP, lv);
       const curInterval  = levelInterval(lv);
-      // Free coins spawn more frequently at higher levels (extra reward)
       const coinInterval = Math.max(1800, 3500 - levelT(lv) * 1700);
 
       ctx.imageSmoothingEnabled = false;
@@ -423,9 +448,9 @@ export default function Game() {
         drawCloud(ctx, c.x, c.y, c.r);
       }
 
-      // ── Physics ────────────────────────────────────────────────────────
-      hatVY.current += GRAVITY;
-      hatY.current  += hatVY.current;
+      // ── Physics (dt-scaled for frame-rate independence) ────────────────
+      hatVY.current += GRAVITY * dt;
+      hatY.current  += hatVY.current * dt;
 
       // ── Pipe cluster spawn ─────────────────────────────────────────────
       if (lastPipeTs.current === 0) lastPipeTs.current = ts;
@@ -495,12 +520,29 @@ export default function Game() {
         // Pass pipe
         if (pipe.x + PIPE_W < HAT_X && !pipe.passed) {
           pipe.passed = true;
-          scoreRef.current += 10;
           pipesPassedRef.current++;
+
+          // Combo tracking
+          const prevCombo = comboRef.current;
+          comboRef.current++;
+          const mult = comboMult(comboRef.current);
+          const prevMult = comboMult(prevCombo);
+          const pts = 10 * mult;
+
+          scoreRef.current += pts;
           const nb = Math.floor(scoreRef.current / 100);
           if (nb > bthRef.current) { bthRef.current = nb; setBthEarned(nb); }
           setScore(scoreRef.current);
           Sounds.playScore();
+
+          // Announce new combo threshold
+          if (mult > prevMult) {
+            const labels: Record<number, string> = { 2: "×2 COMBO!", 3: "×3 COMBO!", 4: "×4 MAX COMBO!" };
+            spawnFloat(GW / 2, GH * 0.44, labels[mult] ?? "", comboColor(mult));
+          }
+          // Score float (shows multiplied amount)
+          const floatLabel = mult > 1 ? `+${pts} ×${mult}` : "+10";
+          spawnFloat(HAT_X + HAT_W + 12, hatY.current + HAT_H / 2, floatLabel, comboColor(mult));
 
           const newLv = Math.min(100, Math.floor(pipesPassedRef.current / 3) + 1);
           if (newLv > levelRef.current) {
@@ -508,7 +550,6 @@ export default function Game() {
             setLevel(newLv);
             spawnFloat(GW / 2, GH * 0.38, `LEVEL ${newLv}!`, "#44ff88");
           }
-          spawnFloat(HAT_X + HAT_W + 12, hatY.current + HAT_H / 2, "+10", "#ffffff");
         }
 
         // Collision (20% shrunk hitbox)
@@ -528,6 +569,7 @@ export default function Game() {
       if (!dead && (hatY.current + HAT_H > floorY || hatY.current < 0)) dead = true;
 
       if (dead) {
+        comboRef.current = 0;
         spawnParticles(HAT_X + HAT_W / 2, hatY.current + HAT_H / 2, "#ff6688", 22);
         shakeRef.current = 14;
         ctx.restore();
@@ -595,13 +637,34 @@ export default function Game() {
       ctx.fillStyle = GOLD;
       ctx.fillText(`$BTH ${bthRef.current}`, GW / 2, bthY);
 
-      // Level badge (top-right, color shifts red as level rises)
+      // Level badge (top-right)
       ctx.textAlign = "right"; ctx.textBaseline = "top";
       ctx.font = `bold ${d.LVL_SIZE}px ${FONT}`;
       const lvColor = lv >= 50 ? "#ff4444" : lv >= 20 ? "#ff9900" : "#44ff88";
       ctx.strokeText(`LVL ${lv}`, GW - pad, pad);
       ctx.fillStyle = lvColor;
       ctx.fillText(`LVL ${lv}`, GW - pad, pad);
+
+      // Combo badge (top-left) — only shown while active
+      const combo = comboRef.current;
+      const mult  = comboMult(combo);
+      if (mult > 1) {
+        const comboPad = pad;
+        ctx.textAlign = "left"; ctx.textBaseline = "top";
+        ctx.font = `bold ${d.COMBO_SIZE}px ${FONT}`;
+        const cColor = comboColor(mult);
+        const cLabel = `×${mult} COMBO`;
+        ctx.strokeStyle = "rgba(0,0,0,0.7)";
+        ctx.lineWidth = 3;
+        ctx.strokeText(cLabel, comboPad, pad);
+        ctx.fillStyle = cColor;
+        ctx.fillText(cLabel, comboPad, pad);
+        // Streak sub-label
+        ctx.font = `bold ${Math.round(d.COMBO_SIZE * 0.65)}px ${FONT}`;
+        ctx.strokeText(`${combo} streak`, comboPad, pad + d.COMBO_SIZE + 2);
+        ctx.fillStyle = "rgba(255,255,255,0.7)";
+        ctx.fillText(`${combo} streak`, comboPad, pad + d.COMBO_SIZE + 2);
+      }
 
       ctx.restore();
 
