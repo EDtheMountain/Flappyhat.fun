@@ -85,9 +85,9 @@ export default function Leaderboard() {
         <div style={{
           color: GOLD, fontSize: "11px", fontFamily: FONT, fontWeight: "bold",
           whiteSpace: "nowrap",
-          animation: "marquee 28s linear infinite",
+          animation: "marquee 38s linear infinite",
         }}>
-          &nbsp;&nbsp;&nbsp;$BTH — FLAPPY WIF HAT — COLLECT COINS — BEAT THE LEADERBOARD — $BTH — FLAPPY WIF HAT — COLLECT COINS — BEAT THE LEADERBOARD &nbsp;&nbsp;&nbsp;
+          &nbsp;&nbsp;&nbsp;$BTH — FLAPPY WIF HAT — COLLECT COINS — BEAT THE LEADERBOARD — CA: ESBCnCXtEZDmX8QnHU6qMZXd9mvjSAZVoYaLKKADBAGS — $BTH — FLAPPY WIF HAT — COLLECT COINS — BEAT THE LEADERBOARD — CA: ESBCnCXtEZDmX8QnHU6qMZXd9mvjSAZVoYaLKKADBAGS&nbsp;&nbsp;&nbsp;
         </div>
       </div>
 

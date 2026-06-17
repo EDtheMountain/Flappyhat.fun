@@ -8,11 +8,24 @@ const GOLD = "#ffd700";
 const PANEL_BG = "rgba(8,12,28,0.92)";
 const PANEL_BORDER = "1.5px solid rgba(255,215,0,0.35)";
 const FONT = '"Courier New", monospace';
+const SOL_ADDR = "2HEsBXsyrb2roxcUwPPKNW9eajm7mL6eKNCWU1XbrCnn";
+const MARQUEE_TEXT =
+  "\u00a0\u00a0\u00a0$BTH \u2014 FLAPPY WIF HAT \u2014 COLLECT COINS \u2014 BEAT THE LEADERBOARD \u2014 CA: ESBCnCXtEZDmX8QnHU6qMZXd9mvjSAZVoYaLKKADBAGS \u2014 $BTH \u2014 FLAPPY WIF HAT \u2014 COLLECT COINS \u2014 BEAT THE LEADERBOARD \u2014 CA: ESBCnCXtEZDmX8QnHU6qMZXd9mvjSAZVoYaLKKADBAGS\u00a0\u00a0\u00a0";
 
 function XLogo() {
   return (
     <svg width="18" height="18" viewBox="0 0 1200 1227" fill="currentColor">
       <path d="M714.163 519.284L1160.89 0H1055.03L667.137 450.887L357.328 0H0L468.492 681.821L0 1226.37H105.866L515.491 750.218L842.672 1226.37H1200L714.163 519.284ZM569.165 687.828L521.697 619.934L144.011 79.6944H306.615L611.412 515.685L658.88 583.579L1055.08 1150.3H892.476L569.165 687.828Z" />
+    </svg>
+  );
+}
+
+function SolanaLogo() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 397.7 311.7" fill="currentColor">
+      <path d="M64.6 237.9c2.4-2.4 5.7-3.8 9.2-3.8h317.4c5.8 0 8.7 7 4.6 11.1l-62.7 62.7c-2.4 2.4-5.7 3.8-9.2 3.8H6.5c-5.8 0-8.7-7-4.6-11.1l62.7-62.7z"/>
+      <path d="M64.6 3.8C67.1 1.4 70.4 0 73.8 0h317.4c5.8 0 8.7 7 4.6 11.1l-62.7 62.7c-2.4 2.4-5.7 3.8-9.2 3.8H6.5c-5.8 0-8.7-7-4.6-11.1L64.6 3.8z"/>
+      <path d="M333.1 120.1c-2.4-2.4-5.7-3.8-9.2-3.8H6.5c-5.8 0-8.7 7-4.6 11.1l62.7 62.7c2.4 2.4 5.7 3.8 9.2 3.8h317.4c5.8 0 8.7-7 4.6-11.1l-62.7-62.7z"/>
     </svg>
   );
 }
@@ -26,13 +39,11 @@ export default function Home() {
   const [twitterLoading, setTwitterLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [logoutLoading, setLogoutLoading] = useState(false);
+  const [showDonate, setShowDonate] = useState(false);
+  const [copied, setCopied] = useState(false);
 
   const { data: me, isLoading: meLoading } = useGetMe({
-    query: {
-      enabled: true,
-      queryKey: getGetMeQueryKey(),
-      retry: false,
-    },
+    query: { enabled: true, queryKey: getGetMeQueryKey(), retry: false },
   });
 
   useEffect(() => {
@@ -96,6 +107,13 @@ export default function Home() {
     }
   }
 
+  function handleCopy() {
+    navigator.clipboard.writeText(SOL_ADDR).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  }
+
   return (
     <div style={{
       minHeight: "100dvh", width: "100%",
@@ -115,9 +133,9 @@ export default function Home() {
         <div style={{
           color: GOLD, fontSize: "11px", fontFamily: FONT, fontWeight: "bold",
           whiteSpace: "nowrap",
-          animation: "marquee 28s linear infinite",
+          animation: "marquee 38s linear infinite",
         }}>
-          &nbsp;&nbsp;&nbsp;$BTH — FLAPPY WIF HAT — COLLECT COINS — BEAT THE LEADERBOARD — $BTH — FLAPPY WIF HAT — COLLECT COINS — BEAT THE LEADERBOARD — $BTH — FLAPPY WIF HAT &nbsp;&nbsp;&nbsp;
+          {MARQUEE_TEXT}
         </div>
       </div>
 
@@ -266,6 +284,78 @@ export default function Home() {
                   {guestLoading ? "JOINING…" : "PLAY AS GUEST"}
                 </button>
               </form>
+
+              {/* Donate Solana button */}
+              <button
+                onClick={() => setShowDonate(v => !v)}
+                style={{
+                  width: "100%", padding: "12px 14px",
+                  background: showDonate
+                    ? "linear-gradient(135deg, rgba(153,69,255,0.2), rgba(20,241,149,0.1))"
+                    : "rgba(255,255,255,0.04)",
+                  border: showDonate
+                    ? "1.5px solid rgba(153,69,255,0.55)"
+                    : "1.5px solid rgba(255,255,255,0.12)",
+                  borderRadius: "8px",
+                  color: showDonate ? "#b97eff" : "rgba(255,255,255,0.45)",
+                  fontFamily: FONT, fontWeight: "bold",
+                  fontSize: "13px", cursor: "pointer",
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: "8px",
+                  letterSpacing: "0.05em",
+                  transition: "all 0.2s",
+                }}
+              >
+                <SolanaLogo />
+                DONATE SOLANA
+              </button>
+
+              {/* Donate address panel */}
+              {showDonate && (
+                <div style={{
+                  background: "linear-gradient(135deg, rgba(153,69,255,0.08), rgba(20,241,149,0.04))",
+                  border: "1.5px solid rgba(153,69,255,0.3)",
+                  borderRadius: "10px",
+                  padding: "14px",
+                  display: "flex", flexDirection: "column", gap: "10px",
+                }}>
+                  <div style={{ color: "rgba(255,255,255,0.5)", fontSize: "10px", letterSpacing: "0.1em" }}>
+                    SOLANA WALLET ADDRESS
+                  </div>
+                  <div style={{
+                    background: "rgba(0,0,0,0.4)",
+                    border: "1px solid rgba(153,69,255,0.25)",
+                    borderRadius: "6px",
+                    padding: "10px 12px",
+                    color: "#d4b8ff",
+                    fontFamily: FONT,
+                    fontSize: "11px",
+                    wordBreak: "break-all",
+                    lineHeight: 1.6,
+                    letterSpacing: "0.02em",
+                  }}>
+                    {SOL_ADDR}
+                  </div>
+                  <button
+                    onClick={handleCopy}
+                    style={{
+                      width: "100%", padding: "11px",
+                      background: copied
+                        ? "linear-gradient(135deg, rgba(20,241,149,0.25), rgba(20,200,120,0.15))"
+                        : "linear-gradient(135deg, rgba(153,69,255,0.25), rgba(100,40,200,0.15))",
+                      border: copied
+                        ? "1.5px solid rgba(20,241,149,0.6)"
+                        : "1.5px solid rgba(153,69,255,0.5)",
+                      borderRadius: "7px",
+                      color: copied ? "#14f195" : "#b97eff",
+                      fontFamily: FONT, fontWeight: "bold",
+                      fontSize: "13px", cursor: "pointer", letterSpacing: "0.06em",
+                      transition: "all 0.2s",
+                    }}
+                  >
+                    {copied ? "✓ COPIED!" : "📋 COPY ADDRESS"}
+                  </button>
+                </div>
+              )}
             </div>
           )}
 
