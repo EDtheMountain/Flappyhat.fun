@@ -388,18 +388,6 @@ export default function Home() {
           </span>
         </Link>
 
-        {/* Built-by credit */}
-        <p style={{ color: "rgba(255,255,255,0.28)", fontFamily: FONT, fontSize: "11px", textAlign: "center", margin: 0, letterSpacing: "0.04em" }}>
-          Want a game like this?{" "}
-          <a
-            href="https://x.com/EDJ_Crypto"
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ color: "rgba(255,215,0,0.55)", textDecoration: "underline" }}
-          >
-            Reach out to ED
-          </a>
-        </p>
       </div>
 
       <style>{`
