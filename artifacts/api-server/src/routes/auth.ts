@@ -25,9 +25,11 @@ const router: IRouter = Router();
 
 // GET /auth/twitter - redirect to Twitter OAuth
 router.get("/auth/twitter", async (req, res): Promise<void> => {
-  const baseUrl = process.env.REPLIT_DOMAINS?.split(",")[0]
-    ? `https://${process.env.REPLIT_DOMAINS.split(",")[0]}`
-    : `http://localhost:${process.env.PORT || 5000}`;
+  const baseUrl = process.env.CANONICAL_DOMAIN
+    ? `https://${process.env.CANONICAL_DOMAIN}`
+    : process.env.REPLIT_DOMAINS?.split(",")[0]
+      ? `https://${process.env.REPLIT_DOMAINS.split(",")[0]}`
+      : `http://localhost:${process.env.PORT || 5000}`;
 
   const consumerKey = process.env.TWITTER_CONSUMER_KEY;
   const consumerSecret = process.env.TWITTER_CONSUMER_SECRET;
