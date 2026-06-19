@@ -83,12 +83,13 @@ export default function Home() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ username: name }),
       });
+      const body = await res.json() as Record<string, unknown>;
       if (!res.ok) {
-        const d = await res.json() as { error?: string };
-        setError(d.error ?? "Login failed.");
+        setError((body.error as string | undefined) ?? "Login failed.");
         return;
       }
-      await queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
+      // Set user data directly so game.tsx sees it immediately (no stale-error window)
+      queryClient.setQueryData(getGetMeQueryKey(), body);
       setLocation("/game");
     } catch {
       setError("Server error. Try again.");

@@ -175,12 +175,28 @@ function clusterCount(lv: number): number {
 
 export default function Game() {
   const [, setLocation] = useLocation();
-  const { data: user, isError: meError, isLoading: meLoading } = useGetMe({ query: { enabled: true, queryKey: getGetMeQueryKey(), retry: false } });
+  const { data: user, isError: meError, isLoading: meLoading } = useGetMe({
+    query: {
+      enabled: true,
+      queryKey: getGetMeQueryKey(),
+      retry: false,
+      // Don't background-refetch during gameplay — a stale 401 would trigger the
+      // auth guard and kill the countdown mid-run.
+      staleTime: Infinity,
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+    },
+  });
   const submitScore = useSubmitScore();
 
-  // Redirect to home if not logged in
+  // Track whether the user has been authenticated at least once this mount.
+  // Only redirect on an auth error if we've never seen a valid session —
+  // this prevents transient background-refetch 401s from kicking players out.
+  const everAuthedRef = useRef(false);
+  if (user) everAuthedRef.current = true;
+
   useEffect(() => {
-    if (!meLoading && meError) {
+    if (!meLoading && meError && !everAuthedRef.current) {
       setLocation("/");
     }
   }, [meLoading, meError, setLocation]);
