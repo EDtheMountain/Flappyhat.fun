@@ -23,35 +23,18 @@ export function playFlap() {
   osc("sine", 320, 560, 0.08, 0.18);
 }
 
-export function playCoin() {
-  osc("sine", 880, 1200, 0.06, 0.22, 0);
-  osc("sine", 1100, 900, 0.12, 0.22, 0.06);
-}
-
 export function playScore() {
   osc("square", 440, 660, 0.06, 0.08);
 }
 
 export function playGameOver() {
-  const c = ctx();
-  // Noise burst with bandpass
-  const bufSize = Math.floor(c.sampleRate * 0.35);
-  const buf = c.createBuffer(1, bufSize, c.sampleRate);
-  const data = buf.getChannelData(0);
-  for (let i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
-  const src = c.createBufferSource();
-  src.buffer = buf;
-  const bp = c.createBiquadFilter();
-  bp.type = "bandpass";
-  bp.frequency.setValueAtTime(900, c.currentTime);
-  bp.frequency.linearRampToValueAtTime(80, c.currentTime + 0.35);
-  const g1 = c.createGain();
-  g1.gain.setValueAtTime(0.45, c.currentTime);
-  g1.gain.exponentialRampToValueAtTime(0.001, c.currentTime + 0.35);
-  src.connect(bp); bp.connect(g1); g1.connect(c.destination);
-  src.start(); src.stop(c.currentTime + 0.35);
-  // Sawtooth tail
-  osc("sawtooth", 160, 60, 0.4, 0.45);
+  // Sad trombone: wah wah wah WOOOOMP
+  osc("sawtooth", 450, 430, 0.20, 0.32, 0.00);
+  osc("sawtooth", 400, 382, 0.20, 0.32, 0.25);
+  osc("sawtooth", 356, 338, 0.20, 0.32, 0.50);
+  osc("sawtooth", 300, 130, 0.80, 0.38, 0.76);
+  // Little "bonk" at the very end for extra comedy
+  osc("square", 110, 55, 0.14, 0.20, 1.55);
 }
 
 export function playStart() {

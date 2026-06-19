@@ -6,17 +6,13 @@ import bgSrc from "@assets/Background_1_1781361780648.png";
 import * as Sounds from "@/lib/sounds";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
-type Pipe     = { x: number; gapTop: number; passed: boolean; hasCoin: boolean; coinCollected: boolean };
-type FreeCoin = { x: number; y: number; collected: boolean };
+type Pipe     = { x: number; gapTop: number; passed: boolean };
 type Particle = { x: number; y: number; vx: number; vy: number; color: string; size: number; life: number; age: number };
 type FloatText = { x: number; y: number; text: string; color: string; age: number; life: number };
 type Cloud    = { x: number; y: number; r: number; speed: number };
 type Phase    = "countdown" | "playing" | "gameover";
 
 // ── Colors ────────────────────────────────────────────────────────────────────
-const GOLD      = "#ffd700";
-const GOLD_DARK = "#b89000";
-const GOLD_LETTER = "#9a7800";
 const GROUND_DARK  = "#3a6025";
 const GROUND_LIGHT = "#4a7830";
 const SKY  = "#55e2eb";
@@ -44,9 +40,7 @@ function makeDims(GW: number, GH: number) {
     HAT_H:      HAT_W * 0.80,
     HAT_X:      GW * 0.22,
     MIN_TOP:    Math.max(CAP_H + 20, GH * 0.16),
-    COIN_R:     PIPE_W * 0.24,
     SCORE_SIZE: Math.round(GH * 0.036),
-    BTH_SIZE:   Math.round(GH * 0.028),
     LVL_SIZE:   Math.round(GH * 0.022),
     COMBO_SIZE: Math.round(GH * 0.024),
     FLOAT_SIZE: Math.round(GH * 0.022),
@@ -129,27 +123,6 @@ function drawPipePair(
   }
 }
 
-// ── Coin drawing (shared) ─────────────────────────────────────────────────────
-function drawCoin(
-  ctx: CanvasRenderingContext2D, cx: number, cy: number,
-  r: number, ts: number,
-) {
-  const pulse = 1 + Math.sin(ts * 0.008) * 0.07;
-  const pr = r * pulse;
-  const glow = ctx.createRadialGradient(cx, cy, 1, cx, cy, pr * 1.8);
-  glow.addColorStop(0, "rgba(255,215,0,0.55)");
-  glow.addColorStop(1, "rgba(255,215,0,0)");
-  ctx.fillStyle = glow;
-  ctx.beginPath(); ctx.arc(cx, cy, pr * 1.8, 0, Math.PI * 2); ctx.fill();
-  ctx.beginPath(); ctx.arc(cx, cy, pr, 0, Math.PI * 2);
-  ctx.fillStyle = GOLD; ctx.fill();
-  ctx.strokeStyle = GOLD_DARK; ctx.lineWidth = 2; ctx.stroke();
-  ctx.fillStyle = GOLD_LETTER;
-  ctx.font = `bold ${Math.round(pr * 1.1)}px ${FONT}`;
-  ctx.textAlign = "center"; ctx.textBaseline = "middle";
-  ctx.fillText("B", cx, cy + 1);
-}
-
 // ── Cloud drawing ─────────────────────────────────────────────────────────────
 function drawCloud(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number) {
   ctx.save();
@@ -222,7 +195,6 @@ export default function Game() {
   const [countdown, setCountdown] = useState<number | string>(3);
   const [score, setScore]         = useState(0);
   const [level, setLevel]         = useState(1);
-  const [bthEarned, setBthEarned] = useState(0);
   const [finalResult, setFinalResult] = useState<{ isHighScore: boolean; rank?: number | null } | null>(null);
 
   // ── Game refs ─────────────────────────────────────────────────────────────
@@ -230,19 +202,16 @@ export default function Game() {
   const hatY           = useRef(0);
   const hatVY          = useRef(0);
   const pipes          = useRef<Pipe[]>([]);
-  const freeCoins      = useRef<FreeCoin[]>([]);
   const particles      = useRef<Particle[]>([]);
   const floatTexts     = useRef<FloatText[]>([]);
   const clouds         = useRef<Cloud[]>([]);
   const scoreRef       = useRef(0);
-  const bthRef         = useRef(0);
   const levelRef       = useRef(1);
   const pipesPassedRef = useRef(0);
   const comboRef       = useRef(0);   // consecutive pipes passed without dying
   const shakeRef       = useRef(0);
   const bgOffset       = useRef(0);
   const lastPipeTs     = useRef(0);
-  const lastFreeCoinTs = useRef(0);
   const prevTsRef      = useRef(0);   // for delta-time frame-rate independence
   const frameId        = useRef(0);
   const loopRef        = useRef<FrameRequestCallback>(() => {});
@@ -302,30 +271,12 @@ export default function Game() {
       // Slight height jitter on each pipe in a multi-pipe cluster
       const jitter = count > 1 ? (Math.random() - 0.5) * 30 : 0;
       const clampedTop = Math.max(d.MIN_TOP, Math.min(maxTop + d.MIN_TOP, gapTop + jitter));
-      // Only the last pipe in the cluster carries a coin (reward for clearing the wall)
-      const hasCoin = i === count - 1 && Math.random() > 0.35;
       pipes.current.push({
         x: d.GW + d.PIPE_W + i * spacing,
         gapTop: clampedTop,
         passed: false,
-        hasCoin,
-        coinCollected: false,
       });
     }
-  };
-
-  /** Spawn a free-floating $BTH coin anywhere in the open sky */
-  const spawnFreeCoin = () => {
-    const d = D.current;
-    const floorY = d.GH - d.GROUND_H;
-    const margin = d.COIN_R * 3;
-    const minY = d.GH * 0.10 + margin;
-    const maxY = floorY - margin;
-    freeCoins.current.push({
-      x: d.GW + d.COIN_R * 2,
-      y: minY + Math.random() * (maxY - minY),
-      collected: false,
-    });
   };
 
   const spawnParticles = (x: number, y: number, color: string, count: number, upward = false) => {
@@ -365,20 +316,17 @@ export default function Game() {
     hatY.current = D.current.GH * 0.4;
     hatVY.current = 0;
     pipes.current = [];
-    freeCoins.current = [];
     particles.current = [];
     floatTexts.current = [];
     scoreRef.current = 0;
-    bthRef.current = 0;
     levelRef.current = 1;
     pipesPassedRef.current = 0;
     comboRef.current = 0;
     shakeRef.current = 0;
     bgOffset.current = 0;
     lastPipeTs.current = 0;
-    lastFreeCoinTs.current = 0;
     prevTsRef.current = 0;
-    setScore(0); setBthEarned(0); setLevel(1); setFinalResult(null);
+    setScore(0); setLevel(1); setFinalResult(null);
     initClouds();
     setPhase("playing");
     Sounds.playStart();
@@ -412,7 +360,7 @@ export default function Game() {
       if (!ctx) return;
 
       const d = D.current;
-      const { GW, GH, GRAVITY, SCROLL, PIPE_GAP, PIPE_W, CAP_H, GROUND_H, HAT_W, HAT_H, HAT_X, COIN_R } = d;
+      const { GW, GH, GRAVITY, SCROLL, PIPE_GAP, PIPE_W, CAP_H, GROUND_H, HAT_W, HAT_H, HAT_X } = d;
       const floorY = GH - GROUND_H;
 
       // ── Delta-time (frame-rate independence: 60fps = dt 1.0) ────────────
@@ -423,7 +371,6 @@ export default function Game() {
       const curScroll    = levelScroll(SCROLL, lv) * dt;
       const curGap       = levelGap(PIPE_GAP, lv);
       const curInterval  = levelInterval(lv);
-      const coinInterval = Math.max(1800, 3500 - levelT(lv) * 1700);
 
       ctx.imageSmoothingEnabled = false;
       ctx.save();
@@ -466,36 +413,7 @@ export default function Game() {
         lastPipeTs.current = ts;
       }
 
-      // ── Free coin spawn ────────────────────────────────────────────────
-      if (lastFreeCoinTs.current === 0) lastFreeCoinTs.current = ts;
-      if (ts - lastFreeCoinTs.current >= coinInterval && freeCoins.current.filter(c => !c.collected).length < 4) {
-        spawnFreeCoin();
-        lastFreeCoinTs.current = ts;
-      }
-
-      // ── Free coins: draw + collect ─────────────────────────────────────
-      freeCoins.current = freeCoins.current.filter(c => c.x > -COIN_R * 4);
-      for (const fc of freeCoins.current) {
-        fc.x -= curScroll;
-        if (fc.collected) continue;
-        drawCoin(ctx, fc.x, fc.y, COIN_R, ts);
-
-        // Collect check
-        const hcx = HAT_X + HAT_W / 2;
-        const hcy = hatY.current + HAT_H / 2;
-        if (Math.abs(fc.x - hcx) < HAT_W / 2 + COIN_R && Math.abs(fc.y - hcy) < HAT_H / 2 + COIN_R) {
-          fc.collected = true;
-          scoreRef.current += 25;
-          const nb = Math.floor(scoreRef.current / 100);
-          if (nb > bthRef.current) { bthRef.current = nb; setBthEarned(nb); }
-          setScore(scoreRef.current);
-          spawnParticles(fc.x, fc.y, GOLD, 10);
-          spawnFloat(fc.x, fc.y - 20, "+25 $BTH", GOLD);
-          Sounds.playCoin();
-        }
-      }
-
-      // ── Pipes: draw + coin + pass + collision ──────────────────────────
+      // ── Pipes: draw + pass + collision ────────────────────────────────
       let dead = false;
       for (const pipe of pipes.current) {
         pipe.x -= curScroll;
@@ -503,26 +421,6 @@ export default function Game() {
         const bottomH = floorY - bottomY;
 
         drawPipePair(ctx, pipe.x, pipe.gapTop, bottomY, PIPE_W, CAP_H, floorY);
-
-        // Gap coin (on last pipe of a cluster only)
-        if (pipe.hasCoin && !pipe.coinCollected) {
-          const cx = pipe.x + PIPE_W / 2;
-          const cy = pipe.gapTop + curGap / 2;
-          drawCoin(ctx, cx, cy, COIN_R, ts);
-
-          const hcx = HAT_X + HAT_W / 2;
-          const hcy = hatY.current + HAT_H / 2;
-          if (Math.abs(cx - hcx) < HAT_W / 2 + COIN_R && Math.abs(cy - hcy) < HAT_H / 2 + COIN_R) {
-            pipe.coinCollected = true;
-            scoreRef.current += 25;
-            const nb = Math.floor(scoreRef.current / 100);
-            if (nb > bthRef.current) { bthRef.current = nb; setBthEarned(nb); }
-            setScore(scoreRef.current);
-            spawnParticles(cx, cy, GOLD, 10);
-            spawnFloat(cx, cy - 20, "+25 $BTH", GOLD);
-            Sounds.playCoin();
-          }
-        }
 
         // Pass pipe
         if (pipe.x + PIPE_W < HAT_X && !pipe.passed) {
@@ -537,8 +435,6 @@ export default function Game() {
           const pts = 10 * mult;
 
           scoreRef.current += pts;
-          const nb = Math.floor(scoreRef.current / 100);
-          if (nb > bthRef.current) { bthRef.current = nb; setBthEarned(nb); }
           setScore(scoreRef.current);
           Sounds.playScore();
 
@@ -638,12 +534,6 @@ export default function Game() {
       ctx.fillStyle = "#ffffff";
       ctx.fillText(String(scoreRef.current), GW / 2, pad);
 
-      ctx.font = `bold ${d.BTH_SIZE}px ${FONT}`;
-      const bthY = pad + d.SCORE_SIZE + 4;
-      ctx.strokeText(`$BTH ${bthRef.current}`, GW / 2, bthY);
-      ctx.fillStyle = GOLD;
-      ctx.fillText(`$BTH ${bthRef.current}`, GW / 2, bthY);
-
       // Level badge (top-right)
       ctx.textAlign = "right"; ctx.textBaseline = "top";
       ctx.font = `bold ${d.LVL_SIZE}px ${FONT}`;
@@ -720,9 +610,8 @@ export default function Game() {
           <div style={{ background: "rgba(8,12,28,0.92)", border: "1.5px solid rgba(255,215,0,0.55)", borderRadius: "12px", padding: "clamp(20px,4vw,36px) clamp(18px,4vw,32px)", width: "100%", maxWidth: "380px", boxShadow: "0 0 16px rgba(255,215,0,0.3)", fontFamily: FONT, display: "flex", flexDirection: "column", alignItems: "center", gap: "20px" }}>
             <div style={{ color: "#ff4466", fontSize: "clamp(20px,4vw,30px)", fontWeight: "bold", textAlign: "center", textShadow: "0 0 20px rgba(255,68,102,0.6)" }}>GAME OVER</div>
             <div style={{ width: "100%", borderTop: "1px solid rgba(255,215,0,0.2)", borderBottom: "1px solid rgba(255,215,0,0.2)", padding: "14px 0", display: "flex", flexDirection: "column", gap: "10px" }}>
-              <Row label="SCORE"       value={String(score)}   color="#ffffff" />
-              <Row label="LEVEL"       value={String(level)}   color="#44ff88" />
-              <Row label="$BTH EARNED" value={`+${bthEarned}`} color={GOLD} />
+              <Row label="SCORE" value={String(score)} color="#ffffff" />
+              <Row label="LEVEL" value={String(level)} color="#44ff88" />
               {finalResult?.isHighScore && <div style={{ color: "#aaaaff", textAlign: "center", fontSize: "clamp(10px,1.4vw,14px)", marginTop: "4px" }}>NEW HIGH SCORE!</div>}
               {finalResult?.rank != null && <div style={{ color: "rgba(255,255,255,0.55)", textAlign: "center", fontSize: "clamp(10px,1.3vw,13px)" }}>GLOBAL RANK #{finalResult.rank}</div>}
             </div>
