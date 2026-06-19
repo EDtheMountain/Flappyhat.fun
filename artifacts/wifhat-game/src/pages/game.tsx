@@ -310,6 +310,7 @@ export default function Game() {
   };
 
   const flap = () => {
+    Sounds.unlockAudio();
     if (phaseRef.current !== "playing") return;
     const d = D.current;
     hatVY.current = d.FLAP;
@@ -632,7 +633,7 @@ export default function Game() {
               {finalResult?.rank != null && <div style={{ color: "rgba(255,255,255,0.55)", textAlign: "center", fontSize: "clamp(10px,1.3vw,13px)" }}>GLOBAL RANK #{finalResult.rank}</div>}
             </div>
             <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: "10px" }}>
-              <GoldBtn onClick={() => setPhase("countdown")}>PLAY AGAIN</GoldBtn>
+              <GoldBtn onClick={() => { Sounds.unlockAudio(); setPhase("countdown"); }}>PLAY AGAIN</GoldBtn>
               <GhostBtn onClick={() => setLocation("/leaderboard")}>LEADERBOARD</GhostBtn>
             </div>
           </div>

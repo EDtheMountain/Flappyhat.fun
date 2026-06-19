@@ -1,8 +1,24 @@
 let audioCtx: AudioContext | null = null;
+let unlocked = false;
+
 function ctx() {
   if (!audioCtx) audioCtx = new AudioContext();
   if (audioCtx.state === "suspended") audioCtx.resume();
   return audioCtx;
+}
+
+/** Call this inside a user-gesture handler (tap/click) to unlock audio on mobile/iOS. */
+export function unlockAudio() {
+  if (unlocked) return;
+  unlocked = true;
+  const c = ctx();
+  // Play a silent buffer — required by iOS Safari to fully activate the AudioContext
+  const buf = c.createBuffer(1, 1, 22050);
+  const src = c.createBufferSource();
+  src.buffer = buf;
+  src.connect(c.destination);
+  src.start(0);
+  c.resume();
 }
 
 function osc(type: OscillatorType, f1: number, f2: number, dur: number, vol: number, t = 0) {

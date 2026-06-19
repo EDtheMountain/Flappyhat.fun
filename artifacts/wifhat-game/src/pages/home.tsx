@@ -3,6 +3,7 @@ import { useLocation, Link } from "wouter";
 import wifhatImg from "@assets/Wifhat_1781355793327.png";
 import { useGetMe, getGetMeQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
+import { unlockAudio } from "@/lib/sounds";
 
 const GOLD = "#ffd700";
 const PANEL_BG = "rgba(8,12,28,0.92)";
@@ -90,6 +91,7 @@ export default function Home() {
       }
       // Set user data directly so game.tsx sees it immediately (no stale-error window)
       queryClient.setQueryData(getGetMeQueryKey(), body);
+      unlockAudio();
       setLocation("/game");
     } catch {
       setError("Server error. Try again.");
@@ -189,7 +191,7 @@ export default function Home() {
               </div>
 
               <button
-                onClick={() => setLocation("/game")}
+                onClick={() => { unlockAudio(); setLocation("/game"); }}
                 style={{
                   width: "100%", padding: "16px",
                   background: "linear-gradient(135deg, rgba(255,215,0,0.22), rgba(255,185,0,0.14))",
