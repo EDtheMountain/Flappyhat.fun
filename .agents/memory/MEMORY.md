@@ -1,0 +1,1 @@
+- [iOS mobile audio silent switch](ios-audio-silent-switch.md) — Web Audio is muted by the iPhone ring/silent switch; fix via navigator.audioSession.type="playback".

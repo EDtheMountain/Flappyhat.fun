@@ -1,22 +1,68 @@
 let audioCtx: AudioContext | null = null;
 let unlocked = false;
+let silentEl: HTMLAudioElement | null = null;
+
+/**
+ * iPhones mute ALL Web Audio API output when the physical ring/silent switch is
+ * on (iPads/desktops don't have that switch, which is why audio works there but
+ * not on phones). Setting the audio session to "playback" tells iOS to treat our
+ * sound like media playback, so it ignores the silent switch (iOS 16.4+).
+ */
+function setPlaybackSession() {
+  try {
+    const nav = navigator as Navigator & { audioSession?: { type: string } };
+    if (nav.audioSession) nav.audioSession.type = "playback";
+  } catch {
+    /* not supported — fall back to the silent-audio-element trick below */
+  }
+}
+
+/**
+ * Fallback for older iOS that lacks navigator.audioSession: keeping a looping
+ * silent <audio> element playing puts the page into a "playing media" state,
+ * which also routes Web Audio around the silent switch.
+ */
+function playSilentEl() {
+  try {
+    if (!silentEl) {
+      silentEl = document.createElement("audio");
+      silentEl.setAttribute("playsinline", "");
+      silentEl.loop = true;
+      // 0.05s of silence (base64 WAV)
+      silentEl.src =
+        "data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=";
+      silentEl.volume = 0;
+    }
+    void silentEl.play().catch(() => {});
+  } catch {
+    /* ignore */
+  }
+}
 
 function getCtx(): AudioContext {
-  if (!audioCtx) audioCtx = new AudioContext();
+  if (!audioCtx) {
+    setPlaybackSession();
+    audioCtx = new AudioContext();
+  }
   return audioCtx;
 }
 
 function doUnlock() {
-  if (unlocked) return;
-  unlocked = true;
+  // Always (re)assert the playback session + resume — iOS can drop these when
+  // the tab backgrounds or the context auto-suspends, so this isn't one-shot.
+  setPlaybackSession();
   const c = getCtx();
-  // Play a zero-length silent buffer — the iOS trick to activate AudioContext
-  const buf = c.createBuffer(1, 1, 22050);
-  const src = c.createBufferSource();
-  src.buffer = buf;
-  src.connect(c.destination);
-  src.start(0);
   void c.resume();
+  if (!unlocked) {
+    unlocked = true;
+    playSilentEl();
+    // Play a zero-length silent buffer — the iOS trick to activate AudioContext
+    const buf = c.createBuffer(1, 1, 22050);
+    const src = c.createBufferSource();
+    src.buffer = buf;
+    src.connect(c.destination);
+    src.start(0);
+  }
 }
 
 // Register native (non-React) listeners so iOS Safari counts them as real user gestures.
