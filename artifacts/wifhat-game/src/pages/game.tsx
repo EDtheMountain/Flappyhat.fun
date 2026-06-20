@@ -320,6 +320,7 @@ export default function Game() {
 
   const triggerGameOver = () => {
     cancelAnimationFrame(frameId.current);
+    phaseRef.current = "gameover";
     setPhase("gameover");
     Sounds.playGameOver();
     if (user) {
@@ -345,9 +346,15 @@ export default function Game() {
     prevTsRef.current = 0;
     setScore(0); setLevel(1); setFinalResult(null);
     initClouds();
+    // Set the ref synchronously BEFORE starting the loop. The `phase` state is
+    // updated async and the phaseRef-sync effect only runs after render, so the
+    // first animation frame could otherwise see a stale "countdown" and kill the
+    // loop after one frame (hat draws + floats but never moves).
+    phaseRef.current = "playing";
     setPhase("playing");
     Sounds.playStart();
     addPipeCluster();
+    cancelAnimationFrame(frameId.current);
     frameId.current = requestAnimationFrame(loopRef.current);
   };
 

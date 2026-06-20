@@ -11,7 +11,7 @@ const PANEL_BORDER = "1.5px solid rgba(255,215,0,0.35)";
 const FONT = '"Courier New", monospace';
 const SOL_ADDR = "2HEsBXsyrb2roxcUwPPKNW9eajm7mL6eKNCWU1XbrCnn";
 const MARQUEE_TEXT =
-  "\u00a0\u00a0\u00a0$BTH \u2014 FLAPPY WIF HAT \u2014 COLLECT COINS \u2014 BEAT THE LEADERBOARD \u2014 CA: ESBCnCXtEZDmX8QnHU6qMZXd9mvjSAZVoYaLKKADBAGS \u2014 $BTH \u2014 FLAPPY WIF HAT \u2014 COLLECT COINS \u2014 BEAT THE LEADERBOARD \u2014 CA: ESBCnCXtEZDmX8QnHU6qMZXd9mvjSAZVoYaLKKADBAGS\u00a0\u00a0\u00a0";
+  "\u00a0\u00a0\u00a0$BTH \u2014 FLAPPY WIF HAT \u2014 DODGE THE PIPES \u2014 BEAT THE LEADERBOARD \u2014 CA: ESBCnCXtEZDmX8QnHU6qMZXd9mvjSAZVoYaLKKADBAGS \u2014 $BTH \u2014 FLAPPY WIF HAT \u2014 DODGE THE PIPES \u2014 BEAT THE LEADERBOARD \u2014 CA: ESBCnCXtEZDmX8QnHU6qMZXd9mvjSAZVoYaLKKADBAGS\u00a0\u00a0\u00a0";
 
 function XLogo() {
   return (
@@ -185,7 +185,7 @@ export default function Home() {
                 <div>
                   <div style={{ color: GOLD, fontWeight: "bold", fontSize: "14px" }}>{me.displayName}</div>
                   <div style={{ color: "rgba(255,215,0,0.45)", fontSize: "11px" }}>
-                    {me.isGuest ? "GUEST" : "X USER"} · BEST {me.highScore} · {me.bthCoins} $BTH
+                    {me.isGuest ? "GUEST" : "X USER"} · BEST {me.highScore}
                   </div>
                 </div>
               </div>
