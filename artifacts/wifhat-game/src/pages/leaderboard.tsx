@@ -44,11 +44,11 @@ function Avatar({ src, name }: { src: string | null | undefined; name: string })
 function SkeletonRow() {
   return (
     <div style={{
-      display: "grid", gridTemplateColumns: "3rem 1fr 5rem 5rem",
+      display: "grid", gridTemplateColumns: "3rem 1fr 6rem",
       gap: "12px", padding: "12px 8px",
       borderBottom: "1px solid rgba(255,215,0,0.06)",
     }}>
-      {[...Array(4)].map((_, i) => (
+      {[...Array(3)].map((_, i) => (
         <div key={i} style={{
           height: "20px", borderRadius: "4px",
           background: "rgba(255,255,255,0.05)",
@@ -63,7 +63,14 @@ export default function Leaderboard() {
   const { data: user } = useGetMe({ query: { enabled: true, queryKey: getGetMeQueryKey(), retry: false } });
   const { data: leaderboard, isLoading } = useGetLeaderboard(
     { limit: 50 },
-    { query: { queryKey: getGetLeaderboardQueryKey({ limit: 50 }) } }
+    {
+      query: {
+        queryKey: getGetLeaderboardQueryKey({ limit: 50 }),
+        refetchOnMount: "always",
+        refetchInterval: 8000,
+        staleTime: 0,
+      },
+    }
   );
 
   return (
@@ -87,7 +94,7 @@ export default function Leaderboard() {
           whiteSpace: "nowrap",
           animation: "marquee 38s linear infinite",
         }}>
-          &nbsp;&nbsp;&nbsp;$BTH — FLAPPY WIF HAT — COLLECT COINS — BEAT THE LEADERBOARD — CA: ESBCnCXtEZDmX8QnHU6qMZXd9mvjSAZVoYaLKKADBAGS — $BTH — FLAPPY WIF HAT — COLLECT COINS — BEAT THE LEADERBOARD — CA: ESBCnCXtEZDmX8QnHU6qMZXd9mvjSAZVoYaLKKADBAGS&nbsp;&nbsp;&nbsp;
+          &nbsp;&nbsp;&nbsp;$BTH — FLAPPY WIF HAT — BEAT THE LEADERBOARD — CA: ESBCnCXtEZDmX8QnHU6qMZXd9mvjSAZVoYaLKKADBAGS — $BTH — FLAPPY WIF HAT — BEAT THE LEADERBOARD — CA: ESBCnCXtEZDmX8QnHU6qMZXd9mvjSAZVoYaLKKADBAGS&nbsp;&nbsp;&nbsp;
         </div>
       </div>
 
@@ -128,15 +135,9 @@ export default function Leaderboard() {
                 <div style={{ color: "rgba(255,215,0,0.45)", fontSize: "11px" }}>{user.isGuest ? "GUEST" : "X USER"}</div>
               </div>
             </div>
-            <div style={{ display: "flex", gap: "24px" }}>
-              <div style={{ textAlign: "right" }}>
-                <div style={{ color: "rgba(255,215,0,0.45)", fontSize: "10px", letterSpacing: "0.06em" }}>BEST SCORE</div>
-                <div style={{ color: "#fff", fontWeight: "bold", fontSize: "16px" }}>{user.highScore}</div>
-              </div>
-              <div style={{ textAlign: "right" }}>
-                <div style={{ color: "rgba(255,215,0,0.45)", fontSize: "10px", letterSpacing: "0.06em" }}>$BTH</div>
-                <div style={{ color: GOLD, fontWeight: "bold", fontSize: "16px" }}>{user.bthCoins}</div>
-              </div>
+            <div style={{ textAlign: "right" }}>
+              <div style={{ color: "rgba(255,215,0,0.45)", fontSize: "10px", letterSpacing: "0.06em" }}>BEST SCORE</div>
+              <div style={{ color: "#fff", fontWeight: "bold", fontSize: "20px" }}>{user.highScore}</div>
             </div>
           </div>
         )}
@@ -151,7 +152,7 @@ export default function Leaderboard() {
         }}>
           {/* Column headers */}
           <div style={{
-            display: "grid", gridTemplateColumns: "3rem 1fr 5rem 5rem",
+            display: "grid", gridTemplateColumns: "3rem 1fr 6rem",
             gap: "12px", padding: "10px 16px",
             borderBottom: "1px solid rgba(255,215,0,0.15)",
             background: "rgba(255,215,0,0.04)",
@@ -159,7 +160,6 @@ export default function Leaderboard() {
             <div style={{ color: "rgba(255,215,0,0.4)", fontSize: "10px", letterSpacing: "0.08em", textAlign: "center" }}>RANK</div>
             <div style={{ color: "rgba(255,215,0,0.4)", fontSize: "10px", letterSpacing: "0.08em" }}>PLAYER</div>
             <div style={{ color: "rgba(255,215,0,0.4)", fontSize: "10px", letterSpacing: "0.08em", textAlign: "right" }}>SCORE</div>
-            <div style={{ color: "rgba(255,215,0,0.4)", fontSize: "10px", letterSpacing: "0.08em", textAlign: "right" }}>$BTH</div>
           </div>
 
           {/* Rows */}
@@ -177,7 +177,7 @@ export default function Leaderboard() {
                 <div
                   key={entry.userId}
                   style={{
-                    display: "grid", gridTemplateColumns: "3rem 1fr 5rem 5rem",
+                    display: "grid", gridTemplateColumns: "3rem 1fr 6rem",
                     gap: "12px", padding: "12px 16px",
                     borderBottom: "1px solid rgba(255,215,0,0.06)",
                     background: isMe ? "rgba(255,215,0,0.08)" : "transparent",
@@ -223,16 +223,6 @@ export default function Leaderboard() {
                     display: "flex", alignItems: "center", justifyContent: "flex-end",
                   }}>
                     {entry.highScore.toLocaleString()}
-                  </div>
-
-                  {/* $BTH */}
-                  <div style={{
-                    textAlign: "right", color: GOLD, fontSize: "13px",
-                    display: "flex", alignItems: "center", justifyContent: "flex-end",
-                    gap: "3px",
-                  }}>
-                    <span style={{ fontSize: "11px", opacity: 0.6 }}>🪙</span>
-                    {entry.bthCoins}
                   </div>
                 </div>
               );
