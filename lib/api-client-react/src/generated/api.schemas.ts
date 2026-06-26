@@ -84,6 +84,7 @@ export interface CountryLeaderboardEntry {
   countryName: string;
   flag: string;
   totalPlayers: number;
+  totalScores: number;
   totalScore: number;
   averageScore: number;
   topScore: number;

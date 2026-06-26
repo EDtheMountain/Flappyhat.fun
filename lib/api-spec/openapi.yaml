@@ -355,6 +355,8 @@ components:
           type: string
         totalPlayers:
           type: integer
+        totalScores:
+          type: integer
         totalScore:
           type: integer
         averageScore:
@@ -369,6 +371,7 @@ components:
         - countryName
         - flag
         - totalPlayers
+        - totalScores
         - totalScore
         - averageScore
         - topScore

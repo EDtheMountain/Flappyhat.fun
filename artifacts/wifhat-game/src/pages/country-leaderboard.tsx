@@ -115,9 +115,9 @@ export default function CountryLeaderboard() {
           textAlign: "center", color: "rgba(255,215,0,0.35)", fontSize: "11px",
           letterSpacing: "0.05em", lineHeight: 1.5,
         }}>
-          Countries ranked by average high score among their players.
+          Countries ranked by total score across all runs.
           <br />
-          Which nation has the strongest WIF HAT community?
+          Every score counts — not just your best!
         </div>
 
         {/* Country table */}
@@ -137,8 +137,8 @@ export default function CountryLeaderboard() {
           }}>
             <div style={{ color: "rgba(255,215,0,0.4)", fontSize: "10px", letterSpacing: "0.08em", textAlign: "center" }}>RANK</div>
             <div style={{ color: "rgba(255,215,0,0.4)", fontSize: "10px", letterSpacing: "0.08em" }}>COUNTRY</div>
-            <div style={{ color: "rgba(255,215,0,0.4)", fontSize: "10px", letterSpacing: "0.08em", textAlign: "right" }}>AVG</div>
-            <div style={{ color: "rgba(255,215,0,0.4)", fontSize: "10px", letterSpacing: "0.08em", textAlign: "right" }}>PLAYERS</div>
+            <div style={{ color: "rgba(255,215,0,0.4)", fontSize: "10px", letterSpacing: "0.08em", textAlign: "right" }}>TOTAL</div>
+            <div style={{ color: "rgba(255,215,0,0.4)", fontSize: "10px", letterSpacing: "0.08em", textAlign: "right" }}>SCORES</div>
             <div style={{ color: "rgba(255,215,0,0.4)", fontSize: "10px", letterSpacing: "0.08em", textAlign: "right" }}>TOP</div>
           </div>
 
@@ -187,23 +187,23 @@ export default function CountryLeaderboard() {
                     </div>
                   </div>
 
-                  {/* Average Score */}
+                  {/* Total Score */}
                   <div style={{
                     textAlign: "right", fontWeight: "bold",
                     color: entry.rank <= 3 ? GOLD : "#e0e0e0",
                     fontSize: "14px",
                     display: "flex", alignItems: "center", justifyContent: "flex-end",
                   }}>
-                    {entry.averageScore.toLocaleString()}
+                    {entry.totalScore.toLocaleString()}
                   </div>
 
-                  {/* Total Players */}
+                  {/* Total Scores Submitted */}
                   <div style={{
                     textAlign: "right", fontWeight: "bold",
                     color: "#e0e0e0", fontSize: "14px",
                     display: "flex", alignItems: "center", justifyContent: "flex-end",
                   }}>
-                    {entry.totalPlayers}
+                    {entry.totalScores.toLocaleString()}
                   </div>
 
                   {/* Top Score */}

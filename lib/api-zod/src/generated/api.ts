@@ -121,6 +121,7 @@ export const GetCountryLeaderboardResponseItem = zod.object({
   "countryName": zod.string(),
   "flag": zod.string(),
   "totalPlayers": zod.number(),
+  "totalScores": zod.number(),
   "totalScore": zod.number(),
   "averageScore": zod.number(),
   "topScore": zod.number(),

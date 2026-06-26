@@ -194,36 +194,41 @@ function countryFlag(code: string): string {
 }
 
 router.get("/leaderboard/country", async (_req, res): Promise<void> => {
+  // Aggregate every score ever submitted (not just high scores) by country.
   const rows = await db
     .select({
       country: usersTable.country,
-      totalPlayers: sql<number>`count(*)`,
-      totalScore: sql<number>`sum(${usersTable.highScore})`,
-      topScore: sql<number>`max(${usersTable.highScore})`,
+      totalScores: sql<number>`count(${scoresTable.id})`,
+      totalScore: sql<number>`sum(${scoresTable.score})`,
+      totalPlayers: sql<number>`count(distinct ${scoresTable.userId})`,
+      topScore: sql<number>`max(${scoresTable.score})`,
       topPlayer: sql<string>`(select display_name from users where users.country = ${usersTable.country} order by high_score desc limit 1)`,
     })
-    .from(usersTable)
-    .where(sql`${usersTable.country} is not null and ${usersTable.highScore} > 0`)
+    .from(scoresTable)
+    .innerJoin(usersTable, eq(scoresTable.userId, usersTable.id))
+    .where(sql`${usersTable.country} is not null`)
     .groupBy(usersTable.country);
 
   const entries = rows
     .map((r) => {
       const code = r.country!;
-      const totalPlayers = Number(r.totalPlayers);
+      const totalScores = Number(r.totalScores);
       const totalScore = Number(r.totalScore);
+      const totalPlayers = Number(r.totalPlayers);
       const topScore = Number(r.topScore);
       return {
         country: code,
         countryName: COUNTRY_NAMES[code] ?? code,
         flag: countryFlag(code),
         totalPlayers,
+        totalScores,
         totalScore,
-        averageScore: totalPlayers > 0 ? Math.round(totalScore / totalPlayers) : 0,
+        averageScore: totalScores > 0 ? Math.round(totalScore / totalScores) : 0,
         topScore,
         topPlayer: r.topPlayer ?? "Unknown",
       };
     })
-    .sort((a, b) => b.averageScore - a.averageScore)
+    .sort((a, b) => b.totalScore - a.totalScore)
     .map((e, i) => ({ ...e, rank: i + 1 }));
 
   res.json(entries);
