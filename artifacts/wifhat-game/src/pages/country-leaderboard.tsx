@@ -5,11 +5,14 @@ const GOLD = "#ffd700";
 const FONT = '"Courier New", monospace';
 
 function RankBadge({ rank }: { rank: number }) {
-  if (rank === 1) return <span style={{ fontSize: "24px" }}>🥇</span>;
-  if (rank === 2) return <span style={{ fontSize: "24px" }}>🥈</span>;
-  if (rank === 3) return <span style={{ fontSize: "24px" }}>🥉</span>;
+  if (rank === 1) return <span style={{ fontSize: "22px" }}>🥇</span>;
+  if (rank === 2) return <span style={{ fontSize: "22px" }}>🥈</span>;
+  if (rank === 3) return <span style={{ fontSize: "22px" }}>🥉</span>;
   return (
-    <span style={{ color: "rgba(255,215,0,0.45)", fontFamily: FONT, fontSize: "14px", fontWeight: "bold" }}>
+    <span style={{
+      color: "rgba(255,215,0,0.45)", fontFamily: FONT,
+      fontSize: "13px", fontWeight: "bold",
+    }}>
       #{rank}
     </span>
   );
@@ -18,14 +21,36 @@ function RankBadge({ rank }: { rank: number }) {
 function SkeletonRow() {
   return (
     <div style={{
-      display: "grid", gridTemplateColumns: "4rem 1fr 5rem 5rem 5rem",
-      gap: "12px", padding: "14px 8px",
+      display: "flex", alignItems: "center", gap: "12px",
+      padding: "12px 16px",
       borderBottom: "1px solid rgba(255,215,0,0.06)",
     }}>
-      {[...Array(5)].map((_, i) => (
-        <div key={i} style={{ height: "20px", borderRadius: "4px", background: "rgba(255,255,255,0.05)", animation: "shimmer 1.4s ease-in-out infinite" }} />
-      ))}
+      <div style={{ width: "40px", flexShrink: 0 }}>
+        <div style={{ height: "20px", borderRadius: "4px", background: "rgba(255,255,255,0.05)", animation: "shimmer 1.4s ease-in-out infinite" }} />
+      </div>
+      <div style={{ flex: 1 }}>
+        <div style={{ height: "20px", borderRadius: "4px", background: "rgba(255,255,255,0.05)", animation: "shimmer 1.4s ease-in-out infinite" }} />
+      </div>
+      <div style={{ width: "80px", flexShrink: 0 }}>
+        <div style={{ height: "20px", borderRadius: "4px", background: "rgba(255,255,255,0.05)", animation: "shimmer 1.4s ease-in-out infinite" }} />
+      </div>
     </div>
+  );
+}
+
+function CountryBadge({ code }: { code: string }) {
+  return (
+    <span style={{
+      display: "inline-flex", alignItems: "center", justifyContent: "center",
+      minWidth: "32px", height: "20px",
+      borderRadius: "4px",
+      background: "linear-gradient(135deg, #ff4444, #ff8800)",
+      color: "#fff", fontSize: "10px", fontWeight: "bold",
+      fontFamily: FONT, letterSpacing: "0.05em",
+      padding: "0 6px",
+    }}>
+      {code.toUpperCase()}
+    </span>
   );
 }
 
@@ -94,7 +119,7 @@ export default function CountryLeaderboard() {
           </Link>
           <h1 style={{
             color: GOLD, fontFamily: FONT,
-            fontSize: "clamp(18px, 5vw, 26px)",
+            fontSize: "clamp(16px, 4vw, 24px)",
             fontWeight: "bold", letterSpacing: "0.08em",
             textShadow: "0 0 16px rgba(255,215,0,0.4)",
             margin: 0,
@@ -106,8 +131,8 @@ export default function CountryLeaderboard() {
 
         {/* Tabs */}
         <div style={{ display: "flex", justifyContent: "center", borderBottom: "1px solid rgba(255,215,0,0.12)" }}>
-          <Tab active={false} label="🌐 GLOBAL" href="/leaderboard" />
-          <Tab active={true} label="🏴 COUNTRIES" href="/leaderboard/country" />
+          <Tab active={false} label="🌍 GLOBAL" href="/leaderboard" />
+          <Tab active={true} label="🚩 COUNTRIES" href="/leaderboard/country" />
         </div>
 
         {/* Description */}
@@ -120,7 +145,7 @@ export default function CountryLeaderboard() {
           Every score counts — not just your best!
         </div>
 
-        {/* Country table */}
+        {/* Country list */}
         <div style={{
           background: "rgba(5,5,18,0.85)",
           border: "1.5px solid rgba(255,215,0,0.25)",
@@ -130,16 +155,14 @@ export default function CountryLeaderboard() {
         }}>
           {/* Column headers */}
           <div style={{
-            display: "grid", gridTemplateColumns: "3rem 1fr 5rem 5rem 5rem",
+            display: "flex", alignItems: "center",
             gap: "12px", padding: "10px 16px",
             borderBottom: "1px solid rgba(255,215,0,0.15)",
             background: "rgba(255,215,0,0.04)",
           }}>
-            <div style={{ color: "rgba(255,215,0,0.4)", fontSize: "10px", letterSpacing: "0.08em", textAlign: "center" }}>RANK</div>
-            <div style={{ color: "rgba(255,215,0,0.4)", fontSize: "10px", letterSpacing: "0.08em" }}>COUNTRY</div>
-            <div style={{ color: "rgba(255,215,0,0.4)", fontSize: "10px", letterSpacing: "0.08em", textAlign: "right" }}>TOTAL</div>
-            <div style={{ color: "rgba(255,215,0,0.4)", fontSize: "10px", letterSpacing: "0.08em", textAlign: "right" }}>SCORES</div>
-            <div style={{ color: "rgba(255,215,0,0.4)", fontSize: "10px", letterSpacing: "0.08em", textAlign: "right" }}>TOP</div>
+            <div style={{ width: "40px", textAlign: "center", color: "rgba(255,215,0,0.4)", fontSize: "10px", letterSpacing: "0.08em" }}>RANK</div>
+            <div style={{ flex: 1, color: "rgba(255,215,0,0.4)", fontSize: "10px", letterSpacing: "0.08em" }}>COUNTRY</div>
+            <div style={{ width: "80px", textAlign: "right", color: "rgba(255,215,0,0.4)", fontSize: "10px", letterSpacing: "0.08em" }}>TOTAL</div>
           </div>
 
           {/* Rows */}
@@ -156,7 +179,7 @@ export default function CountryLeaderboard() {
                 <div
                   key={entry.country}
                   style={{
-                    display: "grid", gridTemplateColumns: "3rem 1fr 5rem 5rem 5rem",
+                    display: "flex", alignItems: "center",
                     gap: "12px", padding: "12px 16px",
                     borderBottom: "1px solid rgba(255,215,0,0.06)",
                     background: isMyCountry ? "rgba(255,215,0,0.08)" : "transparent",
@@ -165,54 +188,36 @@ export default function CountryLeaderboard() {
                   }}
                 >
                   {/* Rank */}
-                  <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                  <div style={{ width: "40px", textAlign: "center", flexShrink: 0 }}>
                     <RankBadge rank={entry.rank} />
                   </div>
 
                   {/* Country */}
-                  <div style={{ display: "flex", alignItems: "center", gap: "10px", overflow: "hidden" }}>
-                    <span style={{ fontSize: "28px", lineHeight: 1 }}>{entry.flag}</span>
-                    <div style={{ overflow: "hidden" }}>
-                      <div style={{
+                  <div style={{ flex: 1, minWidth: 0, overflow: "hidden" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <CountryBadge code={entry.country} />
+                      <span style={{
                         color: isMyCountry ? GOLD : "#e0e0e0",
                         fontWeight: isMyCountry ? "bold" : "normal",
                         fontSize: "13px",
                         overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
                       }}>
                         {entry.countryName}
-                      </div>
-                      <div style={{ fontSize: "10px", color: "rgba(255,255,255,0.28)", marginTop: "2px" }}>
-                        Top: {entry.topPlayer}
-                      </div>
+                      </span>
+                    </div>
+                    <div style={{ fontSize: "10px", color: "rgba(255,255,255,0.28)", marginTop: "2px", marginLeft: "40px" }}>
+                      Top: {entry.topPlayer}
                     </div>
                   </div>
 
                   {/* Total Score */}
                   <div style={{
-                    textAlign: "right", fontWeight: "bold",
+                    width: "80px", textAlign: "right", flexShrink: 0,
+                    fontWeight: "bold",
                     color: entry.rank <= 3 ? GOLD : "#e0e0e0",
                     fontSize: "14px",
-                    display: "flex", alignItems: "center", justifyContent: "flex-end",
                   }}>
                     {entry.totalScore.toLocaleString()}
-                  </div>
-
-                  {/* Total Scores Submitted */}
-                  <div style={{
-                    textAlign: "right", fontWeight: "bold",
-                    color: "#e0e0e0", fontSize: "14px",
-                    display: "flex", alignItems: "center", justifyContent: "flex-end",
-                  }}>
-                    {entry.totalScores.toLocaleString()}
-                  </div>
-
-                  {/* Top Score */}
-                  <div style={{
-                    textAlign: "right", fontWeight: "bold",
-                    color: "#e0e0e0", fontSize: "14px",
-                    display: "flex", alignItems: "center", justifyContent: "flex-end",
-                  }}>
-                    {entry.topScore.toLocaleString()}
                   </div>
                 </div>
               );
