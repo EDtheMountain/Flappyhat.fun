@@ -205,9 +205,6 @@ export default function CountryLeaderboard() {
                         {entry.countryName}
                       </span>
                     </div>
-                    <div style={{ fontSize: "10px", color: "rgba(255,255,255,0.28)", marginTop: "2px", marginLeft: "40px" }}>
-                      Top: {entry.topPlayer}
-                    </div>
                   </div>
 
                   {/* Total Score */}
