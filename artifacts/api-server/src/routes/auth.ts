@@ -221,6 +221,7 @@ router.get("/auth/me", async (req, res): Promise<void> => {
       highScore: user.highScore,
       isGuest: user.isGuest,
       twitterId: user.twitterId,
+      country: user.country,
     })
   );
 });

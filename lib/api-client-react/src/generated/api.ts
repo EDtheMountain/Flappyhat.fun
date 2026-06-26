@@ -21,6 +21,7 @@ import type {
 
 import type {
   AuthUrl,
+  CountryLeaderboardEntry,
   ErrorResponse,
   GetLeaderboardParams,
   GuestLoginInput,
@@ -646,6 +647,83 @@ export function useGetLeaderboard<TData = Awaited<ReturnType<typeof getLeaderboa
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetLeaderboardQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getGetCountryLeaderboardUrl = () => {
+
+
+
+
+  return `/api/leaderboard/country`
+}
+
+/**
+ * @summary Get country leaderboard
+ */
+export const getCountryLeaderboard = async ( options?: RequestInit): Promise<CountryLeaderboardEntry[]> => {
+
+  return customFetch<CountryLeaderboardEntry[]>(getGetCountryLeaderboardUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCountryLeaderboardQueryKey = () => {
+    return [
+    `/api/leaderboard/country`
+    ] as const;
+    }
+
+
+export const getGetCountryLeaderboardQueryOptions = <TData = Awaited<ReturnType<typeof getCountryLeaderboard>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCountryLeaderboard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCountryLeaderboardQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCountryLeaderboard>>> = ({ signal }) => getCountryLeaderboard({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCountryLeaderboard>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCountryLeaderboardQueryResult = NonNullable<Awaited<ReturnType<typeof getCountryLeaderboard>>>
+export type GetCountryLeaderboardQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get country leaderboard
+ */
+
+export function useGetCountryLeaderboard<TData = Awaited<ReturnType<typeof getCountryLeaderboard>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCountryLeaderboard>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCountryLeaderboardQueryOptions(options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

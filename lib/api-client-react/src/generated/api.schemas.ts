@@ -24,6 +24,8 @@ export interface User {
   isGuest: boolean;
   /** @nullable */
   twitterId?: string | null;
+  /** @nullable */
+  country?: string | null;
 }
 
 export interface GuestLoginInput {
@@ -74,6 +76,18 @@ export interface UserProfile {
   gamesPlayed: number;
   /** @nullable */
   rank?: number | null;
+}
+
+export interface CountryLeaderboardEntry {
+  rank: number;
+  country: string;
+  countryName: string;
+  flag: string;
+  totalPlayers: number;
+  totalScore: number;
+  averageScore: number;
+  topScore: number;
+  topPlayer: string;
 }
 
 export interface ErrorResponse {

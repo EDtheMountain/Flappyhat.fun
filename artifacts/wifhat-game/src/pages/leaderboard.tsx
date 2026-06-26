@@ -11,6 +11,22 @@ function countryFlag(code: string | null | undefined): string {
   ).join("");
 }
 
+function Tab({ active, label, href }: { active: boolean; label: string; href: string }) {
+  return (
+    <Link href={href}>
+      <span style={{
+        padding: "8px 16px", fontFamily: FONT, fontSize: "12px", fontWeight: "bold",
+        cursor: "pointer", letterSpacing: "0.06em",
+        color: active ? GOLD : "rgba(255,215,0,0.4)",
+        borderBottom: active ? `2px solid ${GOLD}` : "2px solid transparent",
+        transition: "all 0.2s",
+      }}>
+        {label}
+      </span>
+    </Link>
+  );
+}
+
 function RankBadge({ rank }: { rank: number }) {
   if (rank === 1) return <span style={{ fontSize: "20px" }}>🥇</span>;
   if (rank === 2) return <span style={{ fontSize: "20px" }}>🥈</span>;
@@ -118,6 +134,12 @@ export default function Leaderboard() {
             🏆 GLOBAL LEADERBOARD
           </h1>
           <div style={{ width: 32 }} />
+        </div>
+
+        {/* Tabs */}
+        <div style={{ display: "flex", justifyContent: "center", borderBottom: "1px solid rgba(255,215,0,0.12)" }}>
+          <Tab active={true} label="🌍 GLOBAL" href="/leaderboard" />
+          <Tab active={false} label="🚩 COUNTRIES" href="/leaderboard/country" />
         </div>
 
         {/* My stats card (if logged in) */}

@@ -7,6 +7,7 @@ import NotFound from "@/pages/not-found";
 import Home from "@/pages/home";
 import Game from "@/pages/game";
 import Leaderboard from "@/pages/leaderboard";
+import CountryLeaderboard from "@/pages/country-leaderboard";
 
 const queryClient = new QueryClient();
 
@@ -16,6 +17,7 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/game" component={Game} />
       <Route path="/leaderboard" component={Leaderboard} />
+      <Route path="/leaderboard/country" component={CountryLeaderboard} />
       <Route component={NotFound} />
     </Switch>
   );

@@ -17,4 +17,6 @@ export interface User {
   isGuest: boolean;
   /** @nullable */
   twitterId?: string | null;
+  /** @nullable */
+  country?: string | null;
 }

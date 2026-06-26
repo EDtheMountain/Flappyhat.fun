@@ -163,6 +163,21 @@ paths:
                 items:
                   $ref: "#/components/schemas/LeaderboardEntry"
 
+  /leaderboard/country:
+    get:
+      operationId: getCountryLeaderboard
+      tags: [scores]
+      summary: Get country leaderboard
+      responses:
+        "200":
+          description: Country leaderboard entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CountryLeaderboardEntry"
+
   /users/{userId}:
     get:
       operationId: getUserProfile
@@ -218,6 +233,8 @@ components:
         isGuest:
           type: boolean
         twitterId:
+          type: ["string", "null"]
+        country:
           type: ["string", "null"]
       required:
         - id
@@ -324,6 +341,38 @@ components:
         - highScore
         - isGuest
         - gamesPlayed
+
+    CountryLeaderboardEntry:
+      type: object
+      properties:
+        rank:
+          type: integer
+        country:
+          type: string
+        countryName:
+          type: string
+        flag:
+          type: string
+        totalPlayers:
+          type: integer
+        totalScore:
+          type: integer
+        averageScore:
+          type: integer
+        topScore:
+          type: integer
+        topPlayer:
+          type: string
+      required:
+        - rank
+        - country
+        - countryName
+        - flag
+        - totalPlayers
+        - totalScore
+        - averageScore
+        - topScore
+        - topPlayer
 
     ErrorResponse:
       type: object

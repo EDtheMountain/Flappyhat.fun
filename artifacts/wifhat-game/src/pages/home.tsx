@@ -377,16 +377,27 @@ export default function Home() {
           )}
         </div>
 
-        {/* Leaderboard link */}
-        <Link href="/leaderboard">
-          <span style={{
-            color: "rgba(255,215,0,0.55)", fontFamily: FONT, fontSize: "12px",
-            cursor: "pointer", borderBottom: "1px solid rgba(255,215,0,0.25)",
-            paddingBottom: "2px", letterSpacing: "0.07em",
-          }}>
-            🏆 VIEW GLOBAL LEADERBOARD
-          </span>
-        </Link>
+        {/* Leaderboard links */}
+        <div style={{ display: "flex", flexDirection: "column", gap: "8px", alignItems: "center" }}>
+          <Link href="/leaderboard">
+            <span style={{
+              color: "rgba(255,215,0,0.55)", fontFamily: FONT, fontSize: "12px",
+              cursor: "pointer", borderBottom: "1px solid rgba(255,215,0,0.25)",
+              paddingBottom: "2px", letterSpacing: "0.07em",
+            }}>
+              🏆 VIEW GLOBAL LEADERBOARD
+            </span>
+          </Link>
+          <Link href="/leaderboard/country">
+            <span style={{
+              color: "rgba(255,215,0,0.55)", fontFamily: FONT, fontSize: "12px",
+              cursor: "pointer", borderBottom: "1px solid rgba(255,215,0,0.25)",
+              paddingBottom: "2px", letterSpacing: "0.07em",
+            }}>
+              🌐 VIEW COUNTRY LEADERBOARD
+            </span>
+          </Link>
+        </div>
 
       </div>
 

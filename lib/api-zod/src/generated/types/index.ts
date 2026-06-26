@@ -7,6 +7,7 @@
  */
 
 export * from './authUrl';
+export * from './countryLeaderboardEntry';
 export * from './errorResponse';
 export * from './getLeaderboardParams';
 export * from './guestLoginInput';

@@ -48,7 +48,8 @@ export const GetMeResponse = zod.object({
   "bthCoins": zod.number(),
   "highScore": zod.number(),
   "isGuest": zod.boolean(),
-  "twitterId": zod.string().nullish()
+  "twitterId": zod.string().nullish(),
+  "country": zod.string().nullish()
 })
 
 
@@ -71,7 +72,8 @@ export const GuestLoginResponse = zod.object({
   "bthCoins": zod.number(),
   "highScore": zod.number(),
   "isGuest": zod.boolean(),
-  "twitterId": zod.string().nullish()
+  "twitterId": zod.string().nullish(),
+  "country": zod.string().nullish()
 })
 
 
@@ -108,6 +110,23 @@ export const GetLeaderboardResponseItem = zod.object({
   "country": zod.string().nullish()
 })
 export const GetLeaderboardResponse = zod.array(GetLeaderboardResponseItem)
+
+
+/**
+ * @summary Get country leaderboard
+ */
+export const GetCountryLeaderboardResponseItem = zod.object({
+  "rank": zod.number(),
+  "country": zod.string(),
+  "countryName": zod.string(),
+  "flag": zod.string(),
+  "totalPlayers": zod.number(),
+  "totalScore": zod.number(),
+  "averageScore": zod.number(),
+  "topScore": zod.number(),
+  "topPlayer": zod.string()
+})
+export const GetCountryLeaderboardResponse = zod.array(GetCountryLeaderboardResponseItem)
 
 
 /**
