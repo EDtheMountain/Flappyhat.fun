@@ -4,6 +4,7 @@ import { useGetMe, getGetMeQueryKey, useSubmitScore } from "@workspace/api-clien
 import wifhatSrc from "@assets/Wifhat_1781355793327.png";
 import bgSrc from "@assets/Background_1_1781361780648.png";
 import * as Sounds from "@/lib/sounds";
+import { DonateSolButton } from "@/components/donate-sol";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 type Pipe     = { x: number; gapTop: number; passed: boolean };
@@ -642,6 +643,7 @@ export default function Game() {
             <div style={{ width: "100%", display: "flex", flexDirection: "column", gap: "10px" }}>
               <GoldBtn onClick={() => { Sounds.unlockAudio(); setPhase("countdown"); }}>PLAY AGAIN</GoldBtn>
               <GhostBtn onClick={() => setLocation("/leaderboard")}>LEADERBOARD</GhostBtn>
+              <DonateSolButton />
             </div>
           </div>
         </div>

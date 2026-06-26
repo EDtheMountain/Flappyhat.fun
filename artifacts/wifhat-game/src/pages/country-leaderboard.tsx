@@ -1,5 +1,6 @@
 import { Link } from "wouter";
 import { useGetCountryLeaderboard, useGetMe, getGetMeQueryKey, getGetCountryLeaderboardQueryKey } from "@workspace/api-client-react";
+import { DonateSolButton } from "@/components/donate-sol";
 
 const GOLD = "#ffd700";
 const FONT = '"Courier New", monospace';
@@ -238,6 +239,11 @@ export default function CountryLeaderboard() {
               {user ? "▶ PLAY NOW" : "⬅ BACK"}
             </span>
           </Link>
+        </div>
+
+        {/* Donate */}
+        <div style={{ width: "100%", maxWidth: "380px", margin: "0 auto" }}>
+          <DonateSolButton />
         </div>
 
       </div>
