@@ -166,4 +166,8 @@ overrides:
   "@expo/ngrok-bin>@expo/ngrok-bin-win32-x64": "-"
   # drizzle-kit uses esbuild internally on an older version that's vulnerable, this overrides it
   "@esbuild-kit/esm-loader": "npm:tsx@^4.21.0"
-  esbuild: "0.27.3"
+  # Bumped from 0.27.3: Hostinger's persistent pnpm store had a
+  # permission-corrupted cached copy of exactly that version (EACCES
+  # spawning bin/esbuild during postinstall). Bumping the pinned version
+  # forces a fresh download into a new content-hash store location.
+  esbuild: "0.27.4"
