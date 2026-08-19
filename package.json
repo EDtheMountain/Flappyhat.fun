@@ -12,6 +12,7 @@
   },
   "private": true,
   "devDependencies": {
+    "pnpm": "11.22.0",
     "prettier": "^3.8.3",
     "typescript": "~5.9.3"
   }
