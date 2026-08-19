@@ -68,11 +68,20 @@ catalog:
 
 autoInstallPeers: false
 
+# onlyBuiltDependencies is for pnpm <11; allowBuilds is for pnpm 11+, which
+# removed onlyBuiltDependencies entirely (renamed, different shape: a map
+# of package name -> boolean, rather than an allow-list array).
 onlyBuiltDependencies:
   - '@swc/core'
   - esbuild
   - msw
   - unrs-resolver
+
+allowBuilds:
+  '@swc/core': true
+  esbuild: true
+  msw: true
+  unrs-resolver: true
 
 overrides:
   # replit uses linux-x64 only, we can exclude all other platforms
