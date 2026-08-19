@@ -1,3 +1,5 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import express, { type Express } from "express";
 import cors from "cors";
 import pinoHttp from "pino-http";
@@ -8,6 +10,12 @@ import router from "./routes";
 import { logger } from "./lib/logger";
 
 const PgSession = ConnectPgSimple(session);
+
+// Built by the sibling @workspace/wifhat-game package (`vite build`); this
+// server bundles to artifacts/api-server/dist/index.mjs, so two levels up
+// from there lands back in artifacts/.
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const frontendDist = path.resolve(__dirname, "../../wifhat-game/dist/public");
 
 const app: Express = express();
 
@@ -64,6 +72,18 @@ app.use(
   }),
 );
 
+app.use(express.static(frontendDist));
+
 app.use("/api", router);
+
+// SPA fallback: any non-API route that isn't a static file goes to index.html
+// so client-side routing (e.g. /game, /leaderboard) works on direct load.
+app.use((req, res) => {
+  if (req.path.startsWith("/api")) {
+    res.status(404).json({ error: "Not found" });
+    return;
+  }
+  res.sendFile(path.join(frontendDist, "index.html"));
+});
 
 export default app;
