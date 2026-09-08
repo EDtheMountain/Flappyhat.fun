@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-const SOL_ADDR = "2HEsBXsyrb2roxcUwPPKNW9eajm7mL6eKNCWU1XbrCnn";
+const SOL_ADDR = "6jRyhGLZZUNE6vjBZosref2WyGfYH4kxvqeZKLx8paPQ";
 const FONT = '"Courier New", monospace';
 
 function SolanaLogo() {
