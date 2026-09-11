@@ -2,8 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { useLocation } from "wouter";
 import { useGetMe, getGetMeQueryKey, useSubmitScore } from "@workspace/api-client-react";
 import wifhatSrc from "@assets/Wifhat_1781355793327.png";
-import bgSrc from "@assets/Background_1_1781361780648.png";
 import * as Sounds from "@/lib/sounds";
+import { createSkyline, type Skyline } from "@/lib/skyline";
 import { DonateSolButton } from "@/components/donate-sol";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
@@ -16,7 +16,7 @@ type Phase    = "countdown" | "playing" | "gameover";
 // ── Colors ────────────────────────────────────────────────────────────────────
 const GROUND_DARK  = "#3a6025";
 const GROUND_LIGHT = "#4a7830";
-const SKY  = "#55e2eb";
+const GROUND_STRIPE = "#5c9a3a";
 const FONT = '"Courier New", monospace';
 const COUNTDOWN_COLORS: Record<string | number, string> = {
   3: "#ff4444", 2: "#ff9900", 1: "#ffdd00", "GO!": "#44ff88",
@@ -141,6 +141,40 @@ function drawCloud(ctx: CanvasRenderingContext2D, cx: number, cy: number, r: num
   ctx.restore();
 }
 
+// ── Ground drawing (scrolls with the pipes) ───────────────────────────────────
+function drawGround(ctx: CanvasRenderingContext2D, GW: number, floorY: number, groundH: number, offset: number) {
+  const dirt = ctx.createLinearGradient(0, floorY, 0, floorY + groundH);
+  dirt.addColorStop(0, GROUND_DARK);
+  dirt.addColorStop(1, "#2c4a1c");
+  ctx.fillStyle = dirt;
+  ctx.fillRect(0, floorY, GW, groundH);
+
+  const band = Math.round(groundH * 0.16);
+  ctx.fillStyle = GROUND_LIGHT;
+  ctx.fillRect(0, floorY, GW, band);
+
+  // Diagonal grass stripes
+  const sw = band * 1.2;
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(0, floorY, GW, band);
+  ctx.clip();
+  ctx.fillStyle = GROUND_STRIPE;
+  for (let x = -(offset % (sw * 2)) - sw * 2; x < GW + sw; x += sw * 2) {
+    ctx.beginPath();
+    ctx.moveTo(x, floorY + band);
+    ctx.lineTo(x + sw, floorY + band);
+    ctx.lineTo(x + sw + band, floorY);
+    ctx.lineTo(x + band, floorY);
+    ctx.fill();
+  }
+  ctx.restore();
+
+  ctx.fillStyle = "#2a461a";
+  ctx.fillRect(0, floorY, GW, 2);
+  ctx.fillRect(0, floorY + band, GW, 2);
+}
+
 // ── Level helpers ─────────────────────────────────────────────────────────────
 function levelT(lv: number)                      { return (Math.min(100, lv) - 1) / 99; }
 // Max speed is 1.75× base (GW/125 at level 100) — fast but not unplayable
@@ -204,7 +238,8 @@ export default function Game() {
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const hatImg    = useRef<HTMLImageElement | null>(null);
-  const bgImg     = useRef<HTMLImageElement | null>(null);
+  const skyline   = useRef<Skyline | null>(null);
+  const dprRef    = useRef(1);
   const D         = useRef<Dims>(makeDims(400, 600));
 
   // ── UI state ──────────────────────────────────────────────────────────────
@@ -227,7 +262,7 @@ export default function Game() {
   const pipesPassedRef = useRef(0);
   const comboRef       = useRef(0);   // consecutive pipes passed without dying
   const shakeRef       = useRef(0);
-  const bgOffset       = useRef(0);
+  const bgOffset       = useRef(0);   // total world scroll distance (parallax + ground)
   const lastPipeTs     = useRef(0);
   const prevTsRef      = useRef(0);   // for delta-time frame-rate independence
   const frameId        = useRef(0);
@@ -237,25 +272,29 @@ export default function Game() {
 
   // ── Load images ───────────────────────────────────────────────────────────
   useEffect(() => {
-    ([
-      [wifhatSrc, hatImg],
-      [bgSrc,     bgImg],
-    ] as [string, React.MutableRefObject<HTMLImageElement | null>][]).forEach(([src, ref]) => {
-      const img = new Image();
-      img.src = src;
-      img.onload = () => { ref.current = img; };
-    });
+    const img = new Image();
+    img.src = wifhatSrc;
+    img.onload = () => {
+      hatImg.current = img;
+      if (phaseRef.current === "countdown") drawIdle();
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // ── Init canvas ───────────────────────────────────────────────────────────
   useEffect(() => {
     const GW = window.innerWidth;
     const GH = window.innerHeight;
+    // Render at the screen's real pixel density (capped for performance) so
+    // everything stays sharp on high-DPI phones; game logic stays in CSS px.
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    dprRef.current = dpr;
     D.current = makeDims(GW, GH);
     hatY.current = GH * 0.4;
+    skyline.current = createSkyline(GW, GH, GH - D.current.GROUND_H, dpr);
     if (canvasRef.current) {
-      canvasRef.current.width  = GW;
-      canvasRef.current.height = GH;
+      canvasRef.current.width  = Math.round(GW * dpr);
+      canvasRef.current.height = Math.round(GH * dpr);
     }
   }, []);
 
@@ -294,6 +333,22 @@ export default function Game() {
         passed: false,
       });
     }
+  };
+
+  /** Static scene shown behind the countdown: skyline, ground, and the hat at its start position. */
+  const drawIdle = () => {
+    const ctx = canvasRef.current?.getContext("2d");
+    if (!ctx || !skyline.current) return;
+    const d = D.current;
+    const floorY = d.GH - d.GROUND_H;
+    if (clouds.current.length === 0) initClouds();
+    ctx.setTransform(dprRef.current, 0, 0, dprRef.current, 0, 0);
+    ctx.imageSmoothingEnabled = false;
+    skyline.current.drawSky(ctx);
+    for (const c of clouds.current) drawCloud(ctx, c.x, c.y, c.r);
+    skyline.current.drawLayers(ctx, bgOffset.current);
+    drawGround(ctx, d.GW, floorY, d.GROUND_H, bgOffset.current);
+    if (hatImg.current) ctx.drawImage(hatImg.current, d.HAT_X, d.GH * 0.4, d.HAT_W, d.HAT_H);
   };
 
   const spawnParticles = (x: number, y: number, color: string, count: number, upward = false) => {
@@ -362,6 +417,7 @@ export default function Game() {
   // ── Countdown ─────────────────────────────────────────────────────────────
   useEffect(() => {
     if (phase !== "countdown") return;
+    drawIdle();
     let count = 3;
     setCountdown(count);
     Sounds.playCountdown(count as 1 | 2 | 3);
@@ -397,6 +453,7 @@ export default function Game() {
       const curGap       = levelGap(PIPE_GAP, lv);
       const curInterval  = levelInterval(lv);
 
+      ctx.setTransform(dprRef.current, 0, 0, dprRef.current, 0, 0);
       ctx.imageSmoothingEnabled = false;
       ctx.save();
 
@@ -406,26 +463,17 @@ export default function Game() {
         shakeRef.current *= 0.78;
       }
 
-      // ── Background ─────────────────────────────────────────────────────
-      bgOffset.current += curScroll * 0.45;
-      if (bgImg.current && bgImg.current.naturalWidth > 0) {
-        const iw = bgImg.current.naturalWidth;
-        const ih = bgImg.current.naturalHeight;
-        const scale = GH / ih;
-        const sw = iw * scale;
-        const off = bgOffset.current % sw;
-        for (let x = -off; x < GW + sw; x += sw) ctx.drawImage(bgImg.current, x, 0, sw, GH);
-      } else {
-        ctx.fillStyle = SKY;
-        ctx.fillRect(0, 0, GW, GH);
-      }
+      // ── Background: sky, clouds, parallax skyline ──────────────────────
+      bgOffset.current += curScroll;
+      skyline.current?.drawSky(ctx);
 
-      // ── Clouds ─────────────────────────────────────────────────────────
       for (const c of clouds.current) {
         c.x -= curScroll * c.speed;
         if (c.x < -(c.r * 3)) c.x = GW + c.r * 3;
         drawCloud(ctx, c.x, c.y, c.r);
       }
+
+      skyline.current?.drawLayers(ctx, bgOffset.current);
 
       // ── Physics (dt-scaled for frame-rate independence) ────────────────
       hatVY.current += GRAVITY * dt;
@@ -506,10 +554,7 @@ export default function Game() {
       }
 
       // ── Ground ─────────────────────────────────────────────────────────
-      ctx.fillStyle = GROUND_DARK;
-      ctx.fillRect(0, floorY, GW, GROUND_H);
-      ctx.fillStyle = GROUND_LIGHT;
-      ctx.fillRect(0, floorY, GW, GROUND_H * 0.14);
+      drawGround(ctx, GW, floorY, GROUND_H, bgOffset.current);
 
       // ── Hat ────────────────────────────────────────────────────────────
       ctx.save();

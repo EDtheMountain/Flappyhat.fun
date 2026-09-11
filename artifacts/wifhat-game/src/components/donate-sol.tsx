@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 const SOL_ADDR = "6jRyhGLZZUNE6vjBZosref2WyGfYH4kxvqeZKLx8paPQ";
-const FONT = '"Courier New", monospace';
+const FONT = '"JetBrains Mono", "Courier New", monospace';
 
 function SolanaLogo() {
   return (
